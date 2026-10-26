@@ -1522,7 +1522,7 @@ const EU=()=>{G.eu=G.eu||{ae:{},wt:{},truce:{},siege:{},prev:{},coal:{}};return 
 const K=(a,b)=>a<b?a+"|"+b:b+"|"+a;
 const F={aePer:1,aeDecay:0.85,coalAE:10,coalWar:18,warBase:2,warFrac:0.3,truceY:40,fortCap:0.3,levy:0.25,allyShare:0.35,allyMax:1.5,attrMax:0.35,revolt:0.05};
 window.EUF=F;
-function oe(n,ps){ps=ps||provsOf(n.civ);if(!ps.length)return 0;const nc=ps.filter(p=>!isCore(p,n.civ)).length;return nc/Math.max(1,ps.length-nc);}
+function oe(n,ps){ps=ps||provsOf(n.civ);if(!ps.length)return 0;const nc=ps.filter(p=>!isCore(p,n.civ)&&!(window.euOwnPol&&euOwnPol(n,p))).length;return nc/Math.max(1,ps.length-nc);}
 window.euOE=oe;window.euColonists=n=>Math.max(1,Math.round((1+(G.year>1450)+(G.year>1700))*G.step/25*PROV.length/1291));window.euExpF=(n,ps)=>Math.max(0,1-2*oe(n,ps));
 const _ec17=expCap;expCap=function(n){const c=_ec17(n);return oe(n)>0.5?Math.min(c,provsOf(n.civ).length):c;};
 function size(n){return provsOf(n.civ).length;}
@@ -1533,24 +1533,24 @@ function warLimit(att,def,target){const d=target!==undefined?dist(PROV[target].c
 window.euWarLimit=warLimit;window.euTruce=truceLeft;
 function allyBonus(def,att){let s=0;(def.allies||[]).forEach(id=>{const a=N(id);if(a&&a.alive&&a!==att&&!(a.war&&a.war[def.civ]))s+=_pw(a);});return Math.min(F.allyMax,F.allyShare*s/Math.max(1,_pw(def)));}
 function defMods(att,def,target){const ps=borderTargets(att,def);const t=target!==undefined?target:ps[0];const P=[];
- if(t!==undefined){if(t===def.cap)P.push(["Fortaleza de la capital",F.fortCap]);if(isCore(t,def.civ))P.push(["Leva en su territorio (núcleo)",F.levy]);}
+ if(t!==undefined){if(t===def.cap)P.push(["Fortaleza de la capital",F.fortCap]);if(isCore(t,def.civ)&&!(window.euOwnPol&&euOwnPol(att,t)))P.push(["Leva en su territorio (núcleo)",F.levy]);}
  const ab=allyBonus(def,att);if(ab>0.01)P.push(["Aliados y garantes",+ab.toFixed(2)]);return P;}
 function attMods(att,def,target){const ts=borderTargets(att,def);const t=target!==undefined?target:ts[0];if(t===undefined)return[];const d=dist(PROV[t].c,capC(att));const a=Math.min(F.attrMax,d/100);return a>0.01?[["Desgaste y suministro (distancia "+Math.round(d)+"°)",-+a.toFixed(2)]]:[];}
 window.euMods=(att,def,t)=>({att:attMods(att,def,t),def:defMods(att,def,t)});
 let CTX=null;const _pw=n=>{const c=CTX;CTX=null;try{return power(n);}finally{CTX=c;}};
 const _p17=power;power=function(n){let v=_p17(n);if(CTX){if(n===CTX.def)v*=CTX.dm;else if(n===CTX.att)v*=CTX.am;}return v;};
-const _b17=battle;battle=function(att,def,target){const E=EU();
- if(truceLeft(att,def)){if(att.human)toast(`Tregua con ${short(def.civ)}: faltan ${truceLeft(att,def)} años.`);return false;}
- const k=att.civ+">"+def.civ;const lim=warLimit(att,def,target);
- if((E.wt[k]||0)>=lim){if(att.human)toast(`Puntuación de guerra agotada: ya tomaste ${E.wt[k]}/${lim} provincias a ${short(def.civ)}. Firma la paz.`);else makePeace(att,def);return false;}
+const WS=window.WS={};const ws=k=>WS[k]=(WS[k]||0)+1;const _b17=battle;battle=function(att,def,target){const E=EU();ws('call');
+ if(truceLeft(att,def)){ws('truce');if(att.human)toast(`Tregua con ${short(def.civ)}: faltan ${truceLeft(att,def)} años.`);return false;}
+ const k=att.civ+">"+def.civ;const lim=warLimit(att,def,target);E.front=E.front||{};if(target===undefined){const f=E.front[k];const ts=borderTargets(att,def);if(f!==undefined&&G.owner[f]===def.civ&&ts.includes(f))target=f;else if(ts.length){const CLs=window.euClaimList?new Set(euClaimList(att,def)):null;const c2=CLs?ts.filter(p=>CLs.has(p)):[];const pool=c2.length?c2:ts;target=pool[Math.floor(rng()*pool.length)];E.front[k]=target;}arguments[2]=target;}
+ if((E.wt[k]||0)>=lim){ws('limit');if(att.human)toast(`Puntuación de guerra agotada: ya tomaste ${E.wt[k]}/${lim} provincias a ${short(def.civ)}. Firma la paz.`);else makePeace(att,def);return false;}
  const dm=1+defMods(att,def,target).reduce((s,x)=>s+x[1],0),am=1+attMods(att,def,target).reduce((s,x)=>s+x[1],0);
- const before=G.owner.slice();CTX={att,def,dm,am};let r;try{r=_b17.apply(this,arguments);}finally{CTX=null;}
- const CL=window.euClaimList?new Set(euClaimList(att,def)):null;let kept=0;for(let p=0;p<G.owner.length;p++)if(before[p]===def.civ&&G.owner[p]===att.civ){const need=(p===def.cap?3:isCore(p,def.civ)?2:1)+(CL&&!CL.has(p)?1:0);E.siege[p]=(E.siege[p]||0)+1;
-   if(E.siege[p]<need){G.owner[p]=def.civ;if(att.human)toast(`Asedio de ${locName(p)}: ${E.siege[p]}/${need}`);}else{delete E.siege[p];E.prev[p]=E.prev[p]||def.civ;kept++;}}
+ const before=G.owner.slice();CTX={att,def,dm,am};let r;try{r=_b17.apply(this,arguments);}finally{CTX=null;}ws(r?'win':'loss');if(!borderTargets(att,def).length&&!r)ws('noborder?');
+ const CL=window.euClaimList?new Set(euClaimList(att,def)):null;let kept=0;for(let p=0;p<G.owner.length;p++)if(before[p]===def.civ&&G.owner[p]===att.civ){const coalW=E.coal&&E.coal[def.civ]&&E.coal[def.civ].m.includes(att.civ);const need=(coalW&&CL&&!CL.has(p))?1e9:(p===def.cap?2:(isCore(p,def.civ)&&!(CL&&CL.has(p)))?2:1);E.siege[p]=(E.siege[p]||0)+1;ws('occ');
+   if(E.siege[p]<need){G.owner[p]=def.civ;E.front[k]=p;if(att.human)toast(`Asedio de ${locName(p)}: ${E.siege[p]}/${need}`);}else{ws('kept');delete E.siege[p];E.prev[p]=E.prev[p]||def.civ;kept++;}}
  if(kept){E.wt[k]=(E.wt[k]||0)+kept;E.ae[att.civ]=(E.ae[att.civ]||0)+kept*F.aePer*(1+size(att)/40)*(window.euClaimRatio?1-0.5*euClaimRatio(att,def):1);}
  if(!def.alive&&before.some(o=>o===def.civ))checkDead();return r;};
-const _dw17=declareWar;declareWar=function(a,b,silent){if(truceLeft(a,b)){if(a.human)toast(`Hay tregua con ${short(b.civ)} (${truceLeft(a,b)} años).`);return;}return _dw17.apply(this,arguments);};
-const _mp17=makePeace;makePeace=function(a,b){const r=_mp17.apply(this,arguments);const E=EU();E.truce[K(a.civ,b.civ)]=G.year+F.truceY;delete E.wt[a.civ+">"+b.civ];delete E.wt[b.civ+">"+a.civ];return r;};
+const _dw17=declareWar;declareWar=function(a,b,silent){ws('dw17');if(truceLeft(a,b)){if(a.human)toast(`Hay tregua con ${short(b.civ)} (${truceLeft(a,b)} años).`);return;}return _dw17.apply(this,arguments);};
+const _mp17=makePeace;makePeace=function(a,b){ws('peace');const r=_mp17.apply(this,arguments);const E=EU();E.truce[K(a.civ,b.civ)]=G.year+F.truceY;delete E.wt[a.civ+">"+b.civ];delete E.wt[b.civ+">"+a.civ];return r;};
 function yearly(){const E=EU(),f=G.step/25,alive=Object.values(G.nations).filter(n=>n.alive&&size(n));
  Object.keys(E.ae).forEach(c=>{E.ae[c]*=Math.pow(F.aeDecay,f);if(E.ae[c]<0.5)delete E.ae[c];});
  // coaliciones
@@ -1596,7 +1596,9 @@ function natStr(p,n){const y=G.year,P=PROV[p];let s=y<-1000?2:y<0?3:y<1000?4:y<1
  if(P.nw)s*=1.3;if(!P.co)s*=1.25;const c=n&&capC(n);const d=c?dist(P.c,c):0;s*=1+d/20;if(HOSTILE[P.b])s*=1.3;return Math.round(s*10)/10;}
 window.natStr=natStr;window.natLand=natLand;
 // intento de colonizar tierra nativa: combate o negociación (mismas reglas para todos)
-function euNative(n,p){if(!natLand(p))return true;const s=natStr(p,n);const neg=n.pers==="comercial"||n.pers==="religiosa"?0.15:0;
+function homePol(n){const r=rowAt(G.year);const m={};let b=-1,bc=0;provsOf(n.civ).forEach(p=>{const v=dec(r,p);if(isSt(v)){m[v]=(m[v]||0)+1;if(m[v]>bc){bc=m[v];b=v;}}});return b;}
+function ownPol(n,p){const c=n.cap>=0?n.cap:-1;const r=rowAt(G.year);const ps=provsOf(n.civ);for(let k=r;k<=Math.min(R.length-1,r+1);k++){const v=dec(k,p);if(!isSt(v))continue;if(c>=0&&dec(k,c)===v)return true;}return false;}window.euOwnPol=ownPol;
+function euNative(n,p){const r=rowAt(G.year);const v=dec(r,p);const hp=homePol(n);const foreign=isSt(v)&&v!==hp&&G.year<1900;if(!natLand(p)&&!foreign)return true;if(isSt(v)&&v===hp)return true;if(ownPol(n,p))return true;let s=natStr(p,n);if(foreign)s*=1.5;const neg=n.pers==="comercial"||n.pers==="religiosa"?0.15:0;
  const ch=Math.max(0.03,Math.min(0.85,n.army/(n.army+s*6)+neg-(PROV[p].co?0:0.1)));
  if(rng()<ch){if(neg&&n.gold>=5)n.gold-=5;return true;}n.army=Math.max(1,n.army-Math.ceil(s/2));return false;}
 window.euNative=euNative;
@@ -1605,15 +1607,15 @@ natives=function(p){return !G.owner[p]&&natLand(p);};
 const _si18=settleInfo;settleInfo=function(n,p,col){const s=_si18(n,p,col);if(s.nat){s.ns=natStr(p,n);s.risk=Math.min(0.85,s.risk+s.ns/40);}return s;};
 // nacimiento: solo el tamaño histórico en su fecha de inicio
 function histSize(n){const c=n.cap>=0?n.cap:provsOf(n.civ)[0];if(c===undefined)return 99;const r=rowAt(G.year);const v=dec(r,c);
- if(isSt(v))return Math.max(3,SZ[r][v]);const y=G.year;return y<0?4:y<1000?6:y<1500?8:12;}
+ if(isSt(v)){const held=Object.values(G.nations).some(o=>o!==n&&o.alive&&provsOf(o.civ).filter(p=>dec(r,p)===v).length>=SZ[r][v]*0.3);if(!held)return Math.max(3,SZ[r][v]);}const y=G.year;return y<0?4:y<1000?6:y<1500?8:12;}
 window.histSize=histSize;
 // reclamaciones históricas: provincias del rival que pertenecen al estado histórico del atacante (ahora o en la próxima fecha)
 function domPol(ps,r){const m={};let b=-1,bc=0;for(const p of ps){const v=dec(r,p);if(!isSt(v))continue;m[v]=(m[v]||0)+1;if(m[v]>bc){bc=m[v];b=v;}}return b;}
-function claims(att,def){const ps=provsOf(att.civ);const r=rowAt(G.year),r2=Math.min(R.length-1,r+1);const v=domPol(ps,r),v2=domPol(ps,r2);if(v<0&&v2<0)return[];return provsOf(def.civ).filter(p=>{const a=dec(r,p),b=dec(r2,p);return(v>=0&&a===v)||(v2>=0&&b===v2);});}
+function claims(att,def){return provsOf(def.civ).filter(p=>ownPol(att,p));}function claimsOld(att,def){const ps=provsOf(att.civ);const r=rowAt(G.year),r2=Math.min(R.length-1,r+1);const v=domPol(ps,r),v2=domPol(ps,r2);if(v<0&&v2<0)return[];return provsOf(def.civ).filter(p=>{const a=dec(r,p),b=dec(r2,p);return(v>=0&&a===v)||(v2>=0&&b===v2);});}
 window.euClaimList=claims;window.euClaimed=(a,d)=>claims(a,d).length;window.euClaimRatio=(a,d)=>{const n=provsOf(d.civ).length;return n?Math.min(1,claims(a,d).length/n):0;};
 // IA: elige guerras contra rivales históricos y evita sobreextenderse (el jugador ve las mismas cifras)
 const _dw18=declareWar;declareWar=function(a,b,silent){if(a&&!a.human&&silent&&b){const E=G.eu||{ae:{}};const oe=window.euOE?euOE(a):0;const ae=E.ae[a.civ]||0;const cl=claims(a,b).length;
- if(oe>0.35||ae>EUF.coalAE*0.8)return;if(!cl&&rng()<0.75)return;}return _dw18.apply(this,arguments);};
+ if(ae>EUF.coalAE*0.8)return;if(!cl&&(oe>0.35||rng()<0.5))return;if(cl&&oe>0.8)return;}return _dw18.apply(this,arguments);};
 // sucesión múltiple: si el árbol tiene varias sucesoras, nacen todas y se reparten por territorio histórico
 const _sc18b=syncCivs;syncCivs=function(){const end=Object.values(G.nations).filter(n=>n.alive&&!n.human&&civEnd(n.civ)<=G.year).map(n=>({n,nx:civTo(n.civ).map(x=>resolveSucc(x)).filter(x=>civ(x)&&!G.prevent.includes(x)&&civEnd(x)>G.year)}));
  const r=_sc18b.apply(this,arguments);end.forEach(({nx})=>{if(nx.length<2)return;nx.slice(1).forEach(x=>{if(!G.spawned.includes(x)){try{spawn(x,true);}catch(e){}}});});return r;};
@@ -1622,8 +1624,14 @@ function trimTo(n,k){const ps=provsOf(n.civ);if(ps.length<=k)return;const c=capC
 const _sp18=spawn;spawn=function(id){const n=_sp18.apply(this,arguments);try{if(n&&n.alive&&!n.human)trimTo(n,histSize(n));}catch(e){}return n;};
 // sucesión: si el árbol da varias sucesoras, se reparten por cercanía; cada una nace con su tamaño histórico
 const _sc18=syncCivs;/*trim*/syncCivs=function(){const before={};Object.values(G.nations).forEach(n=>{if(n.alive)before[n.civ]=1;});
- const r=_sc18.apply(this,arguments);
+ const ob=G.owner.slice();const r=_sc18.apply(this,arguments);try{const rr=rowAt(G.year);for(let p=0;p<G.owner.length;p++){const o=G.owner[p];if(!o||o===ob[p]||!ob[p])continue;const t=N(o);if(!t||t.human||p===t.cap)continue;const c=t.cap>=0?t.cap:p;const tv=dec(rr,c),pv=dec(rr,p);
+  const keep=ownPol(t,p)||isSt(tv)?(pv===tv||ownPol(t,p)):dist(PROV[p].c,PROV[c].c)<=8;if(!keep)G.owner[p]=null;}}catch(e){}
  Object.values(G.nations).forEach(t=>{if(t.alive&&!before[t.civ]&&!t.human){try{trimTo(t,histSize(t));}catch(e){}}});return r;};
 const _fx18=activeFx;activeFx=function(n){const L=_fx18(n);L.push(["Pueblos sin estado",`colonizar su tierra exige vencerlos o negociar (fuerza ${natStr(provsOf(n.civ)[0]||0,n)}+ según interior/región); fracaso = −ejército`,0,"hasta 1900"]);return L;};
 })();
-</script><div id=ver>v6.3</div></body></html>
+
+;(function(){const _ai=aiTurn;aiTurn=function(n){const r=_ai.apply(this,arguments);try{if(!n.alive||n.human)return r;const my=power(n);const E=G.eu||{ae:{},truce:{}};
+ if(!Object.keys(n.war).length&&(E.ae[n.civ]||0)<EUF.coalAE*0.8){const c=neighborsOf(n).filter(e=>!e.human&&!n.allies.includes(e.civ)&&power(e)<my*0.9).map(e=>({e,k:claims(n,e).length})).filter(x=>x.k>=1).sort((a,b)=>b.k-a.k);
+  if(c.length&&rng()<0.3*G.step/25)declareWar(n,c[0].e,true);else{const w=neighborsOf(n).filter(e=>!e.human&&!n.allies.includes(e.civ)&&power(e)<my*0.7&&rel(n.civ,e.civ)<10);if(w.length&&rng()<0.25*G.step/25)declareWar(n,w[0],true);}}
+ Object.keys(n.war).forEach(id=>{const e=N(id);if(e&&e.alive&&!e.human&&claims(n,e).length)battle(n,e);});}catch(x){}return r;};})();
+</script><div id=ver>v6.4</div></body></html>
