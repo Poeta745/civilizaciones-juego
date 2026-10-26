@@ -223,7 +223,7 @@ async function I(e, m) {
   const n = c[e], o = [`${u}/${n}`, `${u}/${n}.json`];
   await Promise.all(
     o.map(async (a) => {
-      p(a, await S(a, a.endsWith(".onnx") ? m : void 0));
+      await p(a, await S(a, a.endsWith(".onnx") ? m : void 0));
     })
   );
 }

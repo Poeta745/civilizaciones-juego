@@ -1439,4 +1439,35 @@ document.addEventListener("change",e=>{if(e.target&&e.target.id==="netname")ls("
 // la sala debe verse por encima del modal en línea
 (function(){const sl=showLobby;showLobby=function(){const m=document.getElementById("onm");if(m)m.classList.remove("on");return sl.apply(this,arguments);};})();
 (function(){const s=document.createElement("style");s.textContent="#toast{pointer-events:none}";document.head.append(s);})();
-</script><div id=ver>v5.4</div></body></html>
+
+// ===== Voces Piper listas de inmediato: descarga previa persistente con progreso =====
+(function(){
+if("serviceWorker" in navigator&&location.protocol!=="file:")navigator.serviceWorker.register("sw.js").catch(()=>{});
+const VP={state:"esperando",done:0,total:PIPERV.length,pct:0,cur:"",paused:false};window.VPRE=VP;
+const pill=document.createElement("div");pill.id="vpre";pill.style.cssText="position:fixed;right:8px;top:8px;z-index:2400;background:#000b;color:#fff;font:12px sans-serif;padding:4px 9px;border-radius:12px;cursor:pointer;max-width:60vw";pill.title="Voces del narrador (se guardan en tu navegador). Toca para pausar o reanudar.";
+pill.onclick=()=>{VP.paused=!VP.paused;if(!VP.paused)run();ui();};document.body.append(pill);
+function ui(){const st=document.getElementById("start");const vis=st&&st.style.display!=="none";pill.style.display=vis||VP.state==="descargando"&&!G?"block":"none";
+ const def=VP.done>0||VP.defReady;pill.innerHTML=VP.state==="listo"?`🔊 Voces listas (${VP.done}/${VP.total}) · sin internet`:VP.paused?`⏸ Voces ${VP.done}/${VP.total} (toca para seguir)`:VP.state==="error"?`🔈 Voz del dispositivo (no se pudo descargar: ${VP.err})`:`⬇️ ${def?"Voz lista · ":"Voz del dispositivo mientras tanto · "}descargando voces ${VP.done}/${VP.total} · ${VP.cur} ${VP.pct}%`;}
+setInterval(ui,1000);
+let running=false;
+async function run(){if(running)return;running=true;try{
+ try{if(navigator.storage&&navigator.storage.persist)VP.persist=await navigator.storage.persist();}catch(e){}
+ const lib=await piperLib();
+ // motor (wasm, fonemas) a la caché del service worker
+ const B=new URL("piper/",location.href).href;await Promise.all(["ort.wasm.min.js","ort-wasm-simd.wasm","ort-wasm.wasm","piper_phonemize.wasm","piper_phonemize.data","piper-DeOu3H9E.js"].map(f=>fetch(B+f).then(r=>r.ok&&r.arrayBuffer()).catch(()=>0)));
+ const def=VOZ.pv||PIPERV[0][0];const order=[def,...PIPERV.map(v=>v[0]).filter(v=>v!==def)];
+ const conn=navigator.connection||{};const lite=conn.saveData||/(^|-)2g$/.test(conn.effectiveType||"");
+ let have=await lib.stored();VP.done=order.filter(v=>have.includes(v)).length;
+ for(const v of order){if(VP.paused)break;if(have.includes(v))continue;if(lite&&v!==def){VP.lite=true;break;}
+  VP.state="descargando";VP.cur=(PIPERV.find(x=>x[0]===v)||[])[1]||v;VP.pct=0;
+  await lib.download(v,p=>{if(p&&p.total)VP.pct=Math.min(99,Math.round(p.loaded/p.total*100));});
+  have=await lib.stored();VP.done=order.filter(x=>have.includes(x)).length;
+  if(v===def){VP.defReady=true;if(!VOZ.engine)VOZ.engine="piper";}}
+ if(have.includes(def)){VP.defReady=true;if(!VOZ.engine)VOZ.engine="piper";}
+ VP.state=VP.paused?"pausado":(VP.done>=VP.total?"listo":(VP.lite?"listo":"descargando"));if(VP.lite&&VP.done<VP.total)VP.state="listo";
+}catch(e){VP.state="error";VP.err=(e&&e.message||String(e)).slice(0,60);}finally{running=false;ui();}}
+window.vpreRun=run;
+const go=()=>("requestIdleCallback" in window?requestIdleCallback(()=>run(),{timeout:4000}):setTimeout(run,2500));
+if(document.readyState==="complete")setTimeout(go,1500);else addEventListener("load",()=>setTimeout(go,1500));
+})();
+</script><div id=ver>v5.5</div></body></html>
