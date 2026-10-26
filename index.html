@@ -1165,7 +1165,7 @@ const BIOC={s:"#a9a46a",f:"#4f7a3e",j:"#2f6b36",d:"#d9c38a",t:"#8fae6a",m:"#8a7a
 const BIOCN={s:"estepa/pradera",f:"bosque",j:"selva",d:"desierto",t:"tierras de cultivo",m:"montaña",h:"tundra"};
 (function(){const svg=document.getElementById("map");if(!svg)return;const defs=svg.querySelector("defs");
  defs.insertAdjacentHTML("beforeend",`<pattern id=pmtn width="1.2" height="1" patternUnits=userSpaceOnUse><path d="M0,.9L.3,.45L.6,.9" fill="none" stroke="#3b2f22" stroke-width=".07" stroke-opacity=".55"/></pattern><pattern id=pfor width=".8" height=".8" patternUnits=userSpaceOnUse><circle cx=".2" cy=".2" r=".13" fill="#163d18" fill-opacity=".45"/><circle cx=".6" cy=".6" r=".11" fill="#163d18" fill-opacity=".4"/></pattern><pattern id=pdes width="1" height=".6" patternUnits=userSpaceOnUse><path d="M0,.3Q.25,.15 .5,.3T1,.3" fill="none" stroke="#a88a4a" stroke-width=".04" stroke-opacity=".6"/></pattern>`);
- const prov=document.getElementById("provs");prov.insertAdjacentHTML("afterend",`<g id=terr style="pointer-events:none"></g><g id=water style="pointer-events:none">${LAK.map(d=>`<path d="${d}" fill="#2a6a96" stroke="#1d4a6e" stroke-width=".4" vector-effect="non-scaling-stroke"/>`).join("")}${RIV.map(([w,d])=>`<path d="${d}" fill="none" stroke="#5aa9e6" stroke-opacity="1" stroke-width="${((8-w)*0.45+0.9).toFixed(2)}" vector-effect="non-scaling-stroke" stroke-linecap=round stroke-linejoin=round/>`).join("")}</g><g id=cities style="pointer-events:none"></g>`);{const fg=document.getElementById("fog");fg.after(document.getElementById("water"));document.getElementById("water").after(document.getElementById("cities"));}
+ const prov=document.getElementById("provs");prov.insertAdjacentHTML("afterend",`<g id=terr style="pointer-events:none"></g><g id=water style="pointer-events:none">${LAK.map(d=>`<path d="${d}" fill="#2a6a96" stroke="#1d4a6e" stroke-width=".4" vector-effect="non-scaling-stroke"/>`).join("")}${RIV.map(([w,d])=>`<path d="${d}" fill="none" stroke="#5aa9e6" stroke-opacity="1" stroke-width="${(w*0.5+0.4).toFixed(2)}" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"/>`).join("")}</g><g id=cities style="pointer-events:none"></g>`);{const fg=document.getElementById("fog");fg.after(document.getElementById("water"));document.getElementById("water").after(document.getElementById("cities"));}
  const fr=document.getElementById("fogrect");if(fr)fr.setAttribute("fill-opacity","1");})();
 let TERRK="";
 const _drawMap8=drawMap;drawMap=function(){_drawMap8.apply(this,arguments);if(!G)return;const n=me();const kn=n.known;
@@ -1216,4 +1216,30 @@ const seen=new Set();let first=true;const scan=()=>{const it=[...log.children].m
 const _od=openDrw;openDrw=function(k){_od(k);if(k==="ev"){[...log.children].forEach(x=>seen.add(x.textContent));unread=0;upd();}};
 new MutationObserver(()=>{clearTimeout(window._evT);window._evT=setTimeout(scan,50);}).observe(log,{childList:true,subtree:true,characterData:true});
 })();
-</script><div id=ver>v4.5</div></body></html>
+// ---------- Crónica propia: lo que le pasa a tu civilización siempre se registra ----------
+(function(){const lg=t=>{try{if(!G||!G.log)return;t=String(t).replace(/<[^>]+>/g,"").replace(/\s+/g," ").trim();if(!t)return;const last=(G.log[0]||"").replace(/^\[[^\]]*\]\s*/,"");if(last===t)return;addLog(t);}catch(e){}};
+window.ownLog=lg;
+const _t=toast;toast=function(t){_t.apply(this,arguments);if(G&&G.players&&$("#game").style.display==="grid")lg("• "+t);};
+const _ay=advanceYear;advanceYear=function(){const hs=(typeof humanNations==="function"?humanNations():[]);const pre=hs.map(n=>({n,p:new Set(provsOf(n.civ)),t:n.techs.length,s:n.stab}));const r=_ay.apply(this,arguments);
+ pre.forEach(({n,p,t,s})=>{const now=provsOf(n.civ);const gan=now.filter(i=>!p.has(i)),per=[...p].filter(i=>!now.includes(i));const nm=i=>PROV[i].name.split(" (")[0];
+  if(gan.length)lg(`🏳️ ${cname(n.civ)}: +${gan.length} provincia${gan.length>1?"s":""} (${gan.slice(0,4).map(nm).join(", ")}${gan.length>4?"…":""}).`);
+  if(per.length)lg(`⚠️ ${cname(n.civ)} pierde ${per.length} provincia${per.length>1?"s":""} (${per.slice(0,4).map(nm).join(", ")}${per.length>4?"…":""}).`);
+  if(n.techs.length>t)lg(`🔬 ${cname(n.civ)} descubre: ${n.techs.slice(t).map(i=>TECH[i].name).join(", ")}.`);
+  {const r=income(n);lg(`📅 ${cname(n.civ)}: ${now.length} prov. · 🌾+${r.food} ⚒️+${r.prod} 💰+${r.gold} 🔬+${r.sci} · estabilidad ${n.stab}`);}if(Math.abs(n.stab-s)>=5)lg(`🏛️ Estabilidad de ${cname(n.civ)}: ${s} → ${n.stab}.`);});return r;};
+new MutationObserver(()=>{const m=document.getElementById("modal");if(!m||getComputedStyle(m).display==="none")return;const h=m.querySelector("h2,h3,b");if(h&&h.textContent.trim().length>3&&G&&G.log)lg("📜 "+h.textContent.trim().slice(0,120));}).observe(document.getElementById("mbody"),{childList:true});})();
+// ---------- IA: sin tecnologías anacrónicas ni de otras regiones sin contacto ----------
+const TZ9=[[/mesoam|maya|olmec|azteca|mexic|teotihu|zapotec/i,[-118,-82,8,25],1],[/andes|inca|perú|peru|caral|chav|moche|tiwanaku|nazca/i,[-82,-60,-40,5],1],[/china|chin[oa]s/i,[95,125,18,45]],[/jap[oó]n/i,[128,146,30,46]],[/corea/i,[124,131,33,43]],[/india|indo\b|valle del indo|gupta|maurya/i,[60,92,6,36]],[/mesopot|sumer|babil|oriente pr|persia|asiri|levante|anatol|hitit|fenic|acad|elam|islam|árabe|arabe/i,[26,62,22,42]],[/egipt/i,[24,36,20,32]],[/grecia|roma|itali|europa|franci|ingla|alema|reino unido|portug|españa|espa[nñ]a|países bajos|urss|rusia|escandin|viking|bizanc|holand|suiz|suec|austria|polonia/i,[-12,60,35,71]],[/estados unidos|ee\. ?uu|norteam/i,[-130,-60,25,55],1],[/estepa|mongol|esctia|escit/i,[30,125,38,56]],[/áfrica|africa|nubia|etiop|mal[ií]\b|bant[uú]|kush/i,[-20,52,-35,20]]];
+function techZones(t){if(t._z!==undefined)return t._z;const o=String(t.origin||"");const z=TZ9.filter(([re])=>re.test(o)).map(x=>x[1]);t._z=z.length&&!/varios|mundial|global/i.test(o)?z:null;return t._z;}
+function capLL(n){const p=n.cap!=null&&PROV[n.cap]?n.cap:provsOf(n.civ)[0];return p!=null?PROV[p]:null;}
+function techOKai(n,t,strict){const y=techYear(t);if(y>G.year+50)return false;const z=techZones(t);if(!z)return true;const P=capLL(n);if(!P)return true;const[lo,la]=P.c;const inZ=z.some(([a,b,c,d])=>lo>=a-8&&lo<=b+8&&la>=c-8&&la<=d+8);if(inZ)return true;
+ // contacto: una civilización conocida ya la tiene
+ G._tk=G._tk||{};const key=n.civ+":"+t.id+":"+G.year+(strict?"s":"");if(G._tk[key]!==undefined)return G._tk[key];let ok=false;
+ const zAm=z.every(([a])=>a<-30),me_am=lo<-30;const lag=G.year<1500?700:150;
+ if(zAm!==me_am)ok=G.year>=Math.max(1500,y+150);else ok=G.year>=y+lag;
+ if(!ok&&!strict){for(const e of Object.values(G.nations)){if(e!==n&&e.alive&&e.techs.includes(t.id)&&(n.human?civKnownBy(n,e.civ):(()=>{const Q=capLL(e);if(!Q)return false;const dx=Q.c[0]-lo,dy=Q.c[1]-la;return Math.hypot(dx,dy)<(G.year<1500?18:40);})())){ok=true;break;}}}
+ G._tk={};G._tk[key]=ok;return ok;}
+const _availT9=availTech;availTech=function(n){const a=_availT9(n);return n&&!n.human?a.filter(t=>techOKai(n,t)):a;};
+function techFilterNew(){if(!G||!G.nations)return;for(const n of Object.values(G.nations)){if(n._tf||!n.alive)continue;if(!capLL(n))continue;n._tf=1;n.techs=n.techs.filter(id=>techOKai(n,TECH[id],1));}}
+const _ay9=advanceYear;advanceYear=function(){techFilterNew();const r=_ay9.apply(this,arguments);techFilterNew();return r;};
+const _rd9=render;render=function(){try{techFilterNew();}catch(e){}return _rd9.apply(this,arguments);};
+</script><div id=ver>v4.6</div></body></html>
