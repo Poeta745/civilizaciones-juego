@@ -1242,4 +1242,23 @@ const _availT9=availTech;availTech=function(n){const a=_availT9(n);return n&&!n.
 function techFilterNew(){if(!G||!G.nations)return;for(const n of Object.values(G.nations)){if(n._tf||!n.alive)continue;if(!capLL(n))continue;n._tf=1;n.techs=n.techs.filter(id=>techOKai(n,TECH[id],1));}}
 const _ay9=advanceYear;advanceYear=function(){techFilterNew();const r=_ay9.apply(this,arguments);techFilterNew();return r;};
 const _rd9=render;render=function(){try{techFilterNew();}catch(e){}return _rd9.apply(this,arguments);};
-</script><div id=ver>v4.6</div></body></html>
+// ---------- Efectos numéricos de opciones (simulados con el motor real, en una copia del estado) ----------
+const FXF=[["gold","💰 oro"],["prod","⚒️ producción"],["food","🌾 comida"],["stab","🏛️ estabilidad"],["army","⚔️ ejército"],["rp","🔬 puntos de ciencia"],["colonos","👥 colonos"]];
+const FXB=[["pow","% poder militar"],["cap"," capacidad administrativa"],["unrest"," descontento"],["gold"," oro/turno"],["food"," comida/turno"],["sci"," ciencia/turno"]];
+function simAction(civ,act){const save=G,seed=SEED;const stub={};const names=["addLog","tl","toast","say","render","popup","drawMap","showGame"];names.forEach(k=>{try{stub[k]=window[k];window[k]=function(){};}catch(e){}});
+ const lg0=typeof addLog;let out=null;try{G=structuredClone(save);const n0=JSON.parse(JSON.stringify(G.nations[civ]));const pv0=provsOf(civ).length;const ts0=JSON.stringify(G.techShift||{});act();const n1=G.nations[civ];out={n0,n1:JSON.parse(JSON.stringify(n1||{})),pv0,pv1:provsOf(civ).length,ts0:JSON.parse(ts0),ts1:JSON.parse(JSON.stringify(G.techShift||{})),over:JSON.stringify(save.over||{})!==JSON.stringify(G.over||{})};}catch(e){out={err:String(e)};}
+ G=save;SEED=seed;names.forEach(k=>{if(stub[k])window[k]=stub[k];});return out;}
+function fxDiff(r,dur){if(!r||r.err)return[];const c=[];const a=r.n0,b=r.n1;FXF.forEach(([k,l])=>{const d=Math.round((+b[k]||0)-(+a[k]||0));if(d)c.push({k,v:d,l:(d>0?"+":"")+d+" "+l,good:k==="unrest"?d<0:d>0,dur:"ahora"});});
+ const A=a.bon||{},B=b.bon||{};FXB.forEach(([k,l])=>{const d=Math.round((+B[k]||0)-(+A[k]||0));if(d)c.push({k:"bon."+k,v:d,l:(d>0?"+":"")+d+l,good:k==="unrest"?d<0:d>0,dur:dur||"permanente"});});
+ if(r.pv1!==r.pv0)c.push({k:"prov",v:r.pv1-r.pv0,l:(r.pv1>r.pv0?"+":"")+(r.pv1-r.pv0)+" provincias",good:r.pv1>r.pv0,dur:"ahora"});
+ const nt=(b.techs||[]).length-(a.techs||[]).length;if(nt)c.push({k:"tech",v:nt,l:`+${nt} tecnología${nt>1?"s":""}`,good:true,dur:"ahora"});
+ Object.keys(r.ts1).forEach(id=>{const d=(r.ts1[id]||0)-(r.ts0[id]||0);if(d&&TECH[id])c.push({k:"ts"+id,v:d,l:`«${TECH[id].name}» ${d<0?"se adelanta":"se retrasa"} ${Math.abs(d)} años`,good:d<0,dur:"historia"});});
+ if(r.over)c.push({k:"hist",v:1,l:"cambia el curso de la historia (fechas de imperios)",good:true,dur:"historia",neutral:1});
+ if(a.research!==b.research&&b.research!=null&&TECH[b.research])c.push({k:"res",v:1,l:`investigación → ${TECH[b.research].name}`,good:true,dur:"ahora",neutral:1});return c;}
+function chipsHTML(c){if(!c.length)return`<div class=fxc><span class=fxn>Sin efecto numérico directo</span></div>`;return`<div class=fxc>${c.map(x=>`<span class="fx1 ${x.neutral?"fxn":x.good?"fxg":"fxr"}" data-k="${x.k}" data-v="${x.v}">${x.l} <i>(${x.dur})</i></span>`).join("")}</div>`;}
+(function(){const st=document.createElement("style");st.textContent=`.fxc{display:flex;flex-wrap:wrap;gap:4px;margin:3px 0 8px}.fx1{font-size:12px;padding:2px 7px;border-radius:10px;border:1px solid}.fx1 i{opacity:.75;font-style:normal;font-size:11px}.fxg{background:#1e7b3455;color:#7dffa8;border-color:#3fbf6a}.fxr{background:#b0000055;color:#ffb0b0;border-color:#e05555}.fxn{background:#ffffff18;color:#ddd;border-color:#999}`;document.head.appendChild(st);})();
+function fxAnnotate(){const Q=G&&G.queue&&G.queue[0];if(!Q)return;G.chars=G.chars||{};const b=$("#mbody");if(!b||b.querySelector(".fxc"))return;const n=N(Q.civ);if(!n)return;
+ if(Q.type==="char"){b.querySelectorAll('button[onclick^="resolveChar("]').forEach(btn=>{const k=+btn.getAttribute("onclick").match(/\((\d)/)[1];let dur;try{const p=PEOPLE[Q.i];const o=charOpts(p,n)[k];if(o&&/mientras viva|resto de su vida/.test(o.d))dur="mientras viva";}catch(e){}const r=simAction(Q.civ,()=>resolveChar(k));btn.insertAdjacentHTML("afterend",chipsHTML(fxDiff(r,dur)));});}
+ if(Q.type==="dec"){b.querySelectorAll('button[onclick^="resolveDec("]').forEach(btn=>{const k=+btn.getAttribute("onclick").match(/\((\d)/)[1];const r=simAction(Q.civ,()=>resolveDec(k));btn.insertAdjacentHTML("afterend",chipsHTML(fxDiff(r)));});}}
+const _pop9=popup;popup=function(){const r=_pop9.apply(this,arguments);try{fxAnnotate();}catch(e){console.warn(e);}return r;};
+</script><div id=ver>v4.7</div></body></html>
