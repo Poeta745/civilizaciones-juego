@@ -71,3 +71,13 @@ Las 8 voces en español con licencia libre verificada y el motor (onnxruntime-we
 | es_MX-ald-medium | Unlicense |
 | es_MX-claude-high | Apache-2.0 |
 | es_AR-daniela-high | CC BY-SA 4.0 |
+
+## Juego en línea: conexión y servidor TURN
+
+- Invitar: en la sala, «📋 Copiar invitación» copia el código y un enlace `…/?sala=CÓDIGO` que abre directamente la ventana para unirse.
+- Indicador abajo a la izquierda: 🟢 conectado (directa o «relé TURN (TCP/TLS)»), 🟡 reconectando, 🔴 sin servidor. Los invitados se reconectan solos y pueden volver tras cerrar el navegador (se recuerda su identidad).
+- Servidores ICE incluidos: STUN de Google/Cloudflare, TURN público de PeerJS (3478 UDP/TCP) y Open Relay (autenticación estática, 80/443 TCP/TLS), todos de mejor esfuerzo.
+- Para redes muy restrictivas, usa tu propio TURN (se guarda en el navegador y viaja en el enlace de invitación):
+  - `?turn=turns:mi.servidor:443?transport=tcp&tu=USUARIO&tp=CLAVE`
+  - o una cuenta gratuita de Metered: `?metered=MIAPP:APIKEY`
+  - `?relay=1` fuerza el uso del relé (para pruebas); `?noturn=1` borra la configuración guardada.

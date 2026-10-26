@@ -541,7 +541,7 @@ function clientRecv(d){if(d.t==="err"){toast(d.m);netStatus(d.m);return;}
   if(!d.started){showLobby();return;}G=d.g;NET.me=Math.max(0,G.players.findIndex(p=>p.pid===NET.pid));if(!was||$("#game").style.display!=="grid"){$("#lobby").style.display="none";showGame();render();zoomHome();}else render();}}
 function showLobby(){const ae=document.activeElement,keep=ae&&ae.closest&&ae.closest("#lobbybody")&&ae.tagName==="INPUT"?[ae.id||"chatin",ae.value]:null;_showLobby();if(keep){const el=keep[0]==="chatin"?document.querySelector("#lobbybody .chatlog + input"):document.getElementById(keep[0]);if(el){el.value=keep[1];el.focus();}}}
 function _showLobby(){$("#start").style.display="none";$("#lobby").style.display="block";const host=NET.mode==="host";const mine=NET.lobby.find(p=>p.pid===NET.pid)||{};
- const inv=`¡Juguemos Civilizaciones 3000 a.C.–2026! Abre el juego, toca «Unirse con código» y escribe: ${NET.code}`;
+ const inv=`¡Juguemos Civilizaciones 3000 a.C.–2026! Abre el juego, toca «Unirse con código» y escribe: ${NET.code}\n${(typeof netInvite==="function")?netInvite():""}`;
  $("#lobbybody").innerHTML=`<h2>🌐 Sala en línea</h2><p>Código de la sala: <b class=code>${NET.code}</b> <button onclick="navigator.clipboard&&navigator.clipboard.writeText(${JSON.stringify(inv).replace(/"/g,"&quot;")}).then(()=>toast('Invitación copiada'))">📋 Copiar invitación</button></p><p class=muted id=netstatus>${esc(NET.status)}</p>
  <h3>Jugadores (${NET.lobby.length}/12)</h3>${NET.lobby.map(p=>`<div class=item>${p.on||p.pid===NET.pid?"🟢":"⚪"} <b>${esc(p.name)}</b>${p.pid===NET.lobby[0].pid?" (anfitrión)":""} — ${cname(p.civ)} · ${esc(p.role)}</div>`).join("")}
  <h3>Tu elección</h3><div class=field><label>Tu nombre</label><input id=lname value="${esc(mine.name||"")}" onchange="lobbySet()"></div><div class=field><label>Civilización (pueden compartirla)</label><select id=lciv onchange="lobbySet()">${STARTERS.map(c=>`<option value=${c.id} ${mine.civ===c.id?"selected":""}>${c.name}</option>`).join("")}</select></div><div class=field><label>Papel</label><select id=lrole onchange="lobbySet()">${ROLES.map(r=>`<option ${mine.role===r?"selected":""}>${r}</option>`).join("")}</select></div>
@@ -1398,4 +1398,45 @@ const _ay12=advanceYear;advanceYear=function(){const r=_ay12.apply(this,argument
   PROV.forEach((p,i)=>{const o=G.owner[i],on=o&&N(o);if(y>=1945&&on&&!on.human&&byM[p.country]&&byM[p.country]!==o&&homeM(on)!==p.country&&rng()<0.25*G.step/25){G.owner[i]=byM[p.country];return;}if(!G.owner[i]&&byM[p.country]&&rng()<0.35*G.step/25)G.owner[i]=byM[p.country];});}
  return r;};
 })();
-</script><div id=ver>v5.3</div></body></html>
+
+// ===== En línea: ICE/TURN, enlace de invitación, indicador de conexión =====
+(function(){
+const Q=new URLSearchParams(location.search);
+function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v);}catch(e){}}
+// TURN propio (opcional): ?turn=turns:host:443&tu=usuario&tp=clave  o  ?metered=app:apikey  (se guarda en este navegador)
+if(Q.get("turn")){ls("civ_turn",JSON.stringify({urls:Q.get("turn").split(","),username:Q.get("tu")||"",credential:Q.get("tp")||""}));}
+if(Q.get("metered"))ls("civ_metered",Q.get("metered"));
+if(Q.get("noturn"))ls("civ_turn",null),ls("civ_metered",null);
+const RELAY=Q.get("relay")==="1";
+const ICE=[{urls:["stun:stun.l.google.com:19302","stun:stun.cloudflare.com:3478"]},
+ {urls:["turn:eu-0.turn.peerjs.com:3478","turn:us-0.turn.peerjs.com:3478","turn:eu-0.turn.peerjs.com:3478?transport=tcp"],username:"peerjs",credential:"peerjsp"}];
+window.NETICE=ICE;
+// Open Relay (autenticación estática pública, mejor esfuerzo): credenciales TURN-REST calculadas en el navegador
+(async()=>{try{const u=Math.floor(Date.now()/1000)+86400+":civ";const k=await crypto.subtle.importKey("raw",new TextEncoder().encode("openrelayprojectsecret"),{name:"HMAC",hash:"SHA-1"},false,["sign"]);const sg=new Uint8Array(await crypto.subtle.sign("HMAC",k,new TextEncoder().encode(u)));
+ ICE.push({urls:["turn:staticauth.openrelay.metered.ca:80","turn:staticauth.openrelay.metered.ca:443?transport=tcp","turns:staticauth.openrelay.metered.ca:443?transport=tcp"],username:u,credential:btoa(String.fromCharCode(...sg))});}catch(e){}})();
+let custom=null;try{custom=JSON.parse(ls("civ_turn")||"null");}catch(e){}
+if(custom&&custom.urls)ICE.unshift(custom);
+const met=ls("civ_metered");
+if(met&&met.includes(":")){const[app,key]=met.split(":");fetch(`https://${app}.metered.live/api/v1/turn/credentials?apiKey=${encodeURIComponent(key)}`).then(r=>r.json()).then(a=>{if(Array.isArray(a))ICE.unshift(...a);}).catch(()=>toast&&toast("No se pudieron obtener las credenciales TURN de Metered."));}
+window.netInvite=function(){let u=location.origin+location.pathname+"?sala="+NET.code;if(custom&&custom.urls)u+="&turn="+encodeURIComponent(custom.urls.join(","))+"&tu="+encodeURIComponent(custom.username)+"&tp="+encodeURIComponent(custom.credential);if(met)u+="&metered="+encodeURIComponent(met);return u;};
+// Envolver Peer para usar nuestros servidores ICE
+if(typeof Peer!=="undefined"){const P0=Peer;const W=function(id,o){if(id&&id.constructor===Object){o=id;id=undefined;}o=Object.assign({},o||{},{config:{iceServers:ICE,iceTransportPolicy:RELAY?"relay":"all",sdpSemantics:"unified-plan"}});return id?new P0(id,o):new P0(o);};W.prototype=P0.prototype;window.Peer=W;}
+// Indicador de conexión
+const dot=document.createElement("div");dot.id="netdot";dot.style.cssText="position:fixed;left:6px;bottom:6px;z-index:2500;background:#000c;color:#fff;font:12px sans-serif;padding:4px 8px;border-radius:12px;display:none;pointer-events:none";document.body.append(dot);
+NET.kind={};
+async function kindOf(c){try{const pc=c.peerConnection;if(!pc)return"";const st=await pc.getStats();let pair=null;st.forEach(r=>{if(r.type==="transport"&&r.selectedCandidatePairId)pair=st.get(r.selectedCandidatePairId);});if(!pair)st.forEach(r=>{if(r.type==="candidate-pair"&&r.nominated&&r.state==="succeeded")pair=r;});if(!pair)return"";const l=st.get(pair.localCandidateId),r=st.get(pair.remoteCandidateId);return(l&&l.candidateType==="relay")||(r&&r.candidateType==="relay")?"relé TURN"+(l&&l.relayProtocol?" ("+l.relayProtocol.toUpperCase()+")":""):"directa";}catch(e){return"";}}
+function watch(c){if(!c||c._w)return;c._w=1;const pc=c.peerConnection;if(!pc)return void(c._w=0);pc.addEventListener("iceconnectionstatechange",()=>{if(pc.iceConnectionState==="failed")netStatus("No se pudo conectar con el otro jugador: su red bloquea la conexión directa y ningún servidor de relé (TURN) respondió. Prueba otra red (p. ej. datos móviles) o configura un TURN propio.");else if(pc.iceConnectionState==="disconnected")netStatus("Conexión inestable… intentando recuperarla.");});}
+setInterval(async()=>{if(!NET.mode){dot.style.display="none";return;}dot.style.display="block";const pe=NET.peer;const srv=pe&&pe.open&&!pe.disconnected;let txt,col;
+ if(NET.mode==="host"){const others=NET.lobby.filter(p=>p.pid!==NET.pid);const bad=c=>{const pc=c&&c.peerConnection;return !pc||["disconnected","failed","closed"].includes(pc.iceConnectionState);};const on=others.filter(p=>p.on&&p.conn&&p.conn.open&&!bad(p.conn));others.forEach(p=>p.conn&&watch(p.conn));const ks=[];for(const p of on){const k=await kindOf(p.conn);NET.kind[p.pid]=k;if(k)ks.push(k);}
+  col=!srv?"#e33":(on.length<others.length?"#eb3":"#3c6");txt=`Anfitrión · ${on.length}/${others.length} conectados`+(ks.length?" · "+[...new Set(ks)].join(", "):"")+(srv?"":" · sin servidor");}
+ else{const c=NET.conn;watch(c);const ok=c&&c.open;const k=ok?await kindOf(c):"";NET.kind.me=k;col=ok?"#3c6":(srv?"#eb3":"#e33");txt=ok?`Conectado a ${NET.code}`+(k?" · "+k:""):(srv?"Reconectando con el anfitrión…":"Sin conexión al servidor…");}
+ dot.innerHTML=`<span style="color:${col}">●</span> ${txt}`;dot.dataset.state=col==="#3c6"?"ok":col==="#eb3"?"partial":"down";},1500);
+// Abrir con ?sala=CODIGO
+const sala=(Q.get("sala")||"").toUpperCase();
+if(sala){const go=()=>{const i=document.getElementById("netcode");if(!i)return setTimeout(go,300);i.value=sala;const m=document.getElementById("onm");if(m)m.classList.add("on");const n=document.getElementById("netname");if(n){const sv=ls("civ_name");if(sv&&!n.value)n.value=sv;n.focus();}toast&&toast("Te invitaron a la sala "+sala+". Escribe tu nombre y pulsa «Unirse».");};setTimeout(go,500);}
+document.addEventListener("change",e=>{if(e.target&&e.target.id==="netname")ls("civ_name",e.target.value);});
+})();
+// la sala debe verse por encima del modal en línea
+(function(){const sl=showLobby;showLobby=function(){const m=document.getElementById("onm");if(m)m.classList.remove("on");return sl.apply(this,arguments);};})();
+(function(){const s=document.createElement("style");s.textContent="#toast{pointer-events:none}";document.head.append(s);})();
+</script><div id=ver>v5.4</div></body></html>
