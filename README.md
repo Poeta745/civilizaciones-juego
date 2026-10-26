@@ -81,3 +81,7 @@ Las 8 voces en español con licencia libre verificada y el motor (onnxruntime-we
   - `?turn=turns:mi.servidor:443?transport=tcp&tu=USUARIO&tp=CLAVE`
   - o una cuenta gratuita de Metered: `?metered=MIAPP:APIKEY`
   - `?relay=1` fuerza el uso del relé (para pruebas); `?noturn=1` borra la configuración guardada.
+
+## Servidor en línea propio (Render)
+
+`server/` contiene un servidor Node + WebSocket (`/ws`, salud en `/health`) que reenvía los mensajes del juego entre el anfitrión y los invitados: salas con código, enlace de invitación, reconexión al mismo asiento, espectadores para quien llega tarde y el último estado guardado en disco. Se despliega en Render con `render.yaml` (plan gratuito: la primera conexión puede tardar ~1 min mientras «despierta»). Si el servidor no responde, el juego usa PeerJS (P2P) como respaldo; `?p2p=1` fuerza P2P y `?srv=wss://otro/ws` usa otro servidor.

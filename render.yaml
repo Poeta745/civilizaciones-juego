@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: civilizaciones-online
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: npm install --omit=dev
+    startCommand: node server.js
+    healthCheckPath: /health
+    envVars:
+      - key: DATA_DIR
+        value: /tmp/civ-rooms
