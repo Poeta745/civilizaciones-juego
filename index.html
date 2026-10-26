@@ -1580,7 +1580,7 @@ const _fx17=activeFx;activeFx=function(n){const L=_fx17(n);const E=EU();const ps
  Object.keys(n.war||{}).forEach(id=>{const e=N(id);if(!e)return;const k=n.civ+">"+id;const lim=warLimit(n,e);const m=euMods(n,e);
   L.push([`Guerra con ${short(id)}`,`tomadas ${E.wt[k]||0}/${lim} · ataque ${m.att.map(x=>x[0]+" "+Math.round(x[1]*100)+"%").join(", ")||"sin desgaste"} · defensa enemiga ${m.def.map(x=>x[0]+" +"+Math.round(x[1]*100)+"%").join(", ")||"—"}`,0,"guerra"]);});
  Object.keys(E.truce).forEach(k=>{const [a,b]=k.split("|");if((a===n.civ||b===n.civ)&&E.truce[k]>G.year)L.push(["Tregua",`con ${short(a===n.civ?b:a)}`,1,`${E.truce[k]-G.year} años`]);});
- L.push(["Defensa propia (todos)",`capital +${F.fortCap*100}% y asedio 3 turnos; núcleo +${F.levy*100}% leva y asedio 2 turnos; +1 turno de asedio si no es reclamación histórica`,1,"permanente"]);return L;};
+ L.push(["Defensa propia (todos)",`capital +${F.fortCap*100}% y asedio 2 turnos; núcleo +${F.levy*100}% leva y asedio 2 turnos (1 si es reclamación histórica); las coaliciones solo anexan reclamaciones`,1,"permanente"]);return L;};
 })();
 
 /* v6.2 pueblos sin estado resisten la colonización; nacimiento con tamaño histórico; sucesión repartida */
