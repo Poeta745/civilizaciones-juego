@@ -1418,16 +1418,16 @@ let custom=null;try{custom=JSON.parse(ls("civ_turn")||"null");}catch(e){}
 if(custom&&custom.urls)ICE.unshift(custom);
 const met=ls("civ_metered");
 if(met&&met.includes(":")){const[app,key]=met.split(":");fetch(`https://${app}.metered.live/api/v1/turn/credentials?apiKey=${encodeURIComponent(key)}`).then(r=>r.json()).then(a=>{if(Array.isArray(a))ICE.unshift(...a);}).catch(()=>toast&&toast("No se pudieron obtener las credenciales TURN de Metered."));}
-window.netInvite=function(){let u=location.origin+location.pathname+"?sala="+NET.code;if(custom&&custom.urls)u+="&turn="+encodeURIComponent(custom.urls.join(","))+"&tu="+encodeURIComponent(custom.username)+"&tp="+encodeURIComponent(custom.credential);if(met)u+="&metered="+encodeURIComponent(met);return u;};
+window.netInvite=function(){let u=location.origin+location.pathname+"?sala="+NET.code;if(custom&&custom.urls)u+="&turn="+encodeURIComponent(custom.urls.join(","))+"&tu="+encodeURIComponent(custom.username)+"&tp="+encodeURIComponent(custom.credential);if(met)u+="&metered="+encodeURIComponent(met);if(Q.get("srv"))u+="&srv="+encodeURIComponent(Q.get("srv"));if(Q.get("p2p"))u+="&p2p=1";return u;};
 // Envolver Peer para usar nuestros servidores ICE
 if(typeof Peer!=="undefined"){const P0=Peer;const W=function(id,o){if(id&&id.constructor===Object){o=id;id=undefined;}o=Object.assign({},o||{},{config:{iceServers:ICE,iceTransportPolicy:RELAY?"relay":"all",sdpSemantics:"unified-plan"}});return id?new P0(id,o):new P0(o);};W.prototype=P0.prototype;window.Peer=W;}
 // Indicador de conexión
 const dot=document.createElement("div");dot.id="netdot";dot.style.cssText="position:fixed;left:6px;bottom:6px;z-index:2500;background:#000c;color:#fff;font:12px sans-serif;padding:4px 8px;border-radius:12px;display:none;pointer-events:none";document.body.append(dot);
 NET.kind={};
-async function kindOf(c){try{const pc=c.peerConnection;if(!pc)return"";const st=await pc.getStats();let pair=null;st.forEach(r=>{if(r.type==="transport"&&r.selectedCandidatePairId)pair=st.get(r.selectedCandidatePairId);});if(!pair)st.forEach(r=>{if(r.type==="candidate-pair"&&r.nominated&&r.state==="succeeded")pair=r;});if(!pair)return"";const l=st.get(pair.localCandidateId),r=st.get(pair.remoteCandidateId);return(l&&l.candidateType==="relay")||(r&&r.candidateType==="relay")?"relé TURN"+(l&&l.relayProtocol?" ("+l.relayProtocol.toUpperCase()+")":""):"directa";}catch(e){return"";}}
+async function kindOf(c){if(c&&c.viaServer)return"vía servidor";try{const pc=c.peerConnection;if(!pc)return"";const st=await pc.getStats();let pair=null;st.forEach(r=>{if(r.type==="transport"&&r.selectedCandidatePairId)pair=st.get(r.selectedCandidatePairId);});if(!pair)st.forEach(r=>{if(r.type==="candidate-pair"&&r.nominated&&r.state==="succeeded")pair=r;});if(!pair)return"";const l=st.get(pair.localCandidateId),r=st.get(pair.remoteCandidateId);return(l&&l.candidateType==="relay")||(r&&r.candidateType==="relay")?"relé TURN"+(l&&l.relayProtocol?" ("+l.relayProtocol.toUpperCase()+")":""):"directa";}catch(e){return"";}}
 function watch(c){if(!c||c._w)return;c._w=1;const pc=c.peerConnection;if(!pc)return void(c._w=0);pc.addEventListener("iceconnectionstatechange",()=>{if(pc.iceConnectionState==="failed")netStatus("No se pudo conectar con el otro jugador: su red bloquea la conexión directa y ningún servidor de relé (TURN) respondió. Prueba otra red (p. ej. datos móviles) o configura un TURN propio.");else if(pc.iceConnectionState==="disconnected")netStatus("Conexión inestable… intentando recuperarla.");});}
 setInterval(async()=>{if(!NET.mode){dot.style.display="none";return;}dot.style.display="block";const pe=NET.peer;const srv=pe&&pe.open&&!pe.disconnected;let txt,col;
- if(NET.mode==="host"){const others=NET.lobby.filter(p=>p.pid!==NET.pid);const bad=c=>{const pc=c&&c.peerConnection;return !pc||["disconnected","failed","closed"].includes(pc.iceConnectionState);};const on=others.filter(p=>p.on&&p.conn&&p.conn.open&&!bad(p.conn));others.forEach(p=>p.conn&&watch(p.conn));const ks=[];for(const p of on){const k=await kindOf(p.conn);NET.kind[p.pid]=k;if(k)ks.push(k);}
+ if(NET.mode==="host"){const others=NET.lobby.filter(p=>p.pid!==NET.pid);const bad=c=>{if(c&&c.viaServer)return false;const pc=c&&c.peerConnection;return !pc||["disconnected","failed","closed"].includes(pc.iceConnectionState);};const on=others.filter(p=>p.on&&p.conn&&p.conn.open&&!bad(p.conn));others.forEach(p=>p.conn&&watch(p.conn));const ks=[];for(const p of on){const k=await kindOf(p.conn);NET.kind[p.pid]=k;if(k)ks.push(k);}
   col=!srv?"#e33":(on.length<others.length?"#eb3":"#3c6");txt=`Anfitrión · ${on.length}/${others.length} conectados`+(ks.length?" · "+[...new Set(ks)].join(", "):"")+(srv?"":" · sin servidor");}
  else{const c=NET.conn;watch(c);const ok=c&&c.open;const k=ok?await kindOf(c):"";NET.kind.me=k;col=ok?"#3c6":(srv?"#eb3":"#e33");txt=ok?`Conectado a ${NET.code}`+(k?" · "+k:""):(srv?"Reconectando con el anfitrión…":"Sin conexión al servidor…");}
  dot.innerHTML=`<span style="color:${col}">●</span> ${txt}`;dot.dataset.state=col==="#3c6"?"ok":col==="#eb3"?"partial":"down";},1500);
@@ -1470,4 +1470,46 @@ window.vpreRun=run;
 const go=()=>("requestIdleCallback" in window?requestIdleCallback(()=>run(),{timeout:4000}):setTimeout(run,2500));
 if(document.readyState==="complete")setTimeout(go,1500);else addEventListener("load",()=>setTimeout(go,1500));
 })();
-</script><div id=ver>v5.5</div></body></html>
+
+// ===== Servidor en línea propio (Render, WebSocket) con PeerJS como respaldo =====
+(function(){const Q=new URLSearchParams(location.search);
+const WSURL=Q.get("srv")||"wss://civilizaciones-online.onrender.com/ws";const HTTP=WSURL.replace(/^ws/,"http").replace(/\/ws$/,"");
+const P2P=Q.get("p2p")==="1";NET.srv=P2P?"off":"?";
+let hp=null;function waitServer(){if(P2P)return Promise.resolve(false);if(NET.srv==="up")return Promise.resolve(true);if(hp)return hp;const t0=Date.now();
+ hp=new Promise(res=>{const tick=async()=>{try{const r=await fetch(HTTP+"/health",{cache:"no-store"});if(r.ok){NET.srv="up";return res(true);}}catch(e){}
+  if(Date.now()-t0>100000){NET.srv="down";hp=null;return res(false);}NET.srv="waking";if(NET.mode)netStatus(`Despertando el servidor en línea… (${Math.round((Date.now()-t0)/1000)} s; el plan gratuito tarda hasta 1 minuto)`);setTimeout(tick,3000);};tick();});return hp;}
+window.civWaitServer=waitServer;
+class Em{constructor(){this._h={};}on(e,f){(this._h[e]=this._h[e]||[]).push(f);return this;}off(){return this;}emit(e,...a){(this._h[e]||[]).slice().forEach(f=>{try{f(...a)}catch(x){console.error(x)}});}}
+class WSConn extends Em{constructor(p,cid){super();this.p=p;this.cid=cid;this.open=false;this.viaServer=true;this.peer="srv";}
+ send(d){const w=this.p.ws;if(w&&w.readyState===1)w.send(JSON.stringify(this.cid?{t:"to",cid:this.cid,d}:{t:"msg",d}));}
+ close(){if(this.cid){this.p.ws&&this.p.ws.send(JSON.stringify({t:"kick",cid:this.cid}));this._close();}else{try{this.p.ws.close()}catch(e){}}}
+ _close(){if(this.dead)return;this.dead=true;this.open=false;this.emit("close");}}
+class WSPeer extends Em{constructor(id){super();this.host=typeof id==="string";this.code=this.host?id.slice(PEERPFX.length):"";this.open=false;this.disconnected=false;this.destroyed=false;this.conns={};this.viaServer=true;this._start();}
+ _start(){waitServer().then(ok=>{if(this.destroyed)return;if(!ok){this.disconnected=true;this.emit("error",{type:"network"});return;}
+  const w=this.ws=new WebSocket(WSURL);w.onopen=()=>{if(this.host)w.send(JSON.stringify({t:"hosthello",room:this.code,pid:NET.pid}));else{this.open=true;this.emit("open","srv");}};
+  w.onmessage=e=>{let m;try{m=JSON.parse(e.data)}catch(x){return;}this._m(m);};
+  w.onerror=()=>{};w.onclose=()=>{if(this.ws!==w)return;this.open=false;Object.values(this.conns).forEach(c=>c._close());this.conns={};if(this.g)this.g._close();if(!this.destroyed){this.disconnected=true;this.emit("disconnected");}};});}
+ _m(m){if(m.t==="ok"){if(this.host){this.open=true;this.emit("open",PEERPFX+this.code);}return;}
+  if(m.t==="err"){if(this.host&&m.k==="unavailable-id"){this.emit("error",{type:"unavailable-id"});}else{if(this.g)this.g._close();this.emit("error",{type:m.k||"server-error"});}return;}
+  if(this.host){if(m.t==="join"){const o=this.conns[m.cid];if(o)o._close();const c=this.conns[m.cid]=new WSConn(this,m.cid);this.emit("connection",c);setTimeout(()=>{c.open=true;c.emit("open");},0);}
+   else if(m.t==="msg"){const c=this.conns[m.cid];if(c)c.emit("data",m.d);}else if(m.t==="leave"){const c=this.conns[m.cid];if(c){delete this.conns[m.cid];c._close();}}return;}
+  const g=this.g;if(!g)return;if(m.t==="hostup"){g.open=true;g.emit("open");}else if(m.t==="msg")g.emit("data",m.d);else if(m.t==="hostdown"){if(g.open)g._close();else if(!this._dn){this._dn=1;netStatus("El anfitrión está desconectado; esperando a que vuelva…");}}}
+ connect(id){this.code=id.slice(PEERPFX.length);if(this.g&&!this.g.dead)this.g.dead=true;const c=this.g=new WSConn(this,null);this._dn=0;const w=this.ws;if(w&&w.readyState===1)w.send(JSON.stringify({t:"join",room:this.code,pid:NET.pid}));return c;}
+ reconnect(){if(this.destroyed)return;this.disconnected=false;this._start();}
+ disconnect(){try{this.ws.close()}catch(e){}}
+ destroy(){this.destroyed=true;try{this.ws&&this.ws.close()}catch(e){}}}
+window.WSPeer=WSPeer;
+const PJ=window.Peer;window.Peer=function(id,o){if(!P2P&&NET.srv!=="down"){NET.via="server";return new WSPeer(id,o);}NET.via="p2p";return id&&id.constructor!==Object?new PJ(id,o):new PJ(o);};window.Peer.prototype=PJ.prototype;
+// despertar el servidor al abrir la ventana en línea o al llegar con ?sala=
+document.addEventListener("click",e=>{const b=e.target&&e.target.closest&&e.target.closest("button");if(b&&/Jugar en línea/.test(b.textContent))waitServer();},true);if(Q.get("sala"))waitServer();
+// ---- espectadores: quien llega con la partida empezada mira sin actuar ----
+NET.spec=[];
+const _hr=hostRecv;hostRecv=function(c,d){if(typeof d==="string")d=JSON.parse(d);
+ if(d.t==="hello"&&NET.started&&!NET.lobby.find(x=>x.pid===d.pid)){NET.spec=NET.spec.filter(s=>s.pid!==d.pid);NET.spec.push({pid:d.pid,name:d.name||"Espectador",conn:c});c.spec=d.name||"Espectador";c.on("close",()=>{NET.spec=NET.spec.filter(s=>s.conn!==c);});sysChat(`${c.spec} mira la partida como espectador.`);netPush(true);return;}
+ if(c.spec){if(d.t==="chat"){addChat("👁 "+c.spec,d.m);netPush();}return;}return _hr(c,d);};
+const _np=netPush;netPush=function(now){_np(now);if(NET.mode!=="host"||!NET.spec.length)return;setTimeout(()=>{const lob=NET.lobby.map(p=>({pid:p.pid,name:p.name,civ:p.civ,role:p.role,on:p.pid===NET.pid||!!p.on}));const msg=JSON.stringify({t:"state",lobby:lob,chat:NET.chat.slice(-40),started:NET.started,step:NET.step,timer:NET.timer,code:NET.code,g:NET.started?G:null,spec:1});NET.spec.forEach(s=>{if(s.conn&&s.conn.open)try{s.conn.send(msg)}catch(e){}});},now?0:60);};
+const _cr=clientRecv;clientRecv=function(d){if(d&&d.t==="state"&&d.started&&d.g){NET.spect=!d.g.players.some(p=>p.pid===NET.pid);}const r=_cr(d);if(NET.spect)specBanner();return r;};
+function specBanner(){let b=document.getElementById("specb");if(!b){b=document.createElement("div");b.id="specb";b.style.cssText="position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:2600;background:#2a5;color:#fff;font:bold 13px sans-serif;padding:4px 12px;border-radius:0 0 10px 10px";b.textContent="👁 Modo espectador: la partida ya había empezado; puedes mirar y chatear";document.body.append(b);}}
+const _ns=netSend;netSend=function(o){if(NET.spect&&o&&o.t!=="chat"&&o.t!=="hello"){toast("Modo espectador: solo puedes mirar y chatear.");return;}return _ns(o);};
+})();
+</script><div id=ver>v5.6</div></body></html>
