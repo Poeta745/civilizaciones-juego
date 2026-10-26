@@ -1107,13 +1107,53 @@ const _render7u=render;render=function(){_render7u.apply(this,arguments);if(!G||
 function unrestBadges(){const g=$("#plabels");if(!g||!G)return;const n=me();g.querySelectorAll(".ubdg").forEach(e=>e.remove());const r=$("#map").getBoundingClientRect();const k=360/(r.width*Z.z||1);let h="";provsOf(n.civ).forEach(p=>{if(p===n.cap)return;const u=unrest(n,p);const[lo,la]=PROV[p].c;const x=lo+180+k*10,y=90-la-k*10;h+=`<g class=ubdg><title>${unrestTip(n,p)}</title><circle cx="${x}" cy="${y}" r="${k*7}" fill="${unrestCol(u)}" stroke="#000" stroke-width="${k}"/><text x="${x}" y="${y+k*3}" font-size="${k*8}" text-anchor="middle" fill="#000">${u}</text></g>`;});g.insertAdjacentHTML("beforeend",h);}
 (function(){const st=document.createElement("style");st.textContent=`.fxl{margin:4px 0 6px 16px;padding:0;font-size:.85em}.fxt td{padding:3px 6px;font-size:.85em;border-bottom:1px solid #333}`;document.head.appendChild(st);})();
 const _provLabels7=provLabels;provLabels=function(){_provLabels7.apply(this,arguments);unrestBadges();};
-// ---------- v4.3: sub-pestañas para paneles largos ----------
-var SUBT={};
-function subTabs(key,html){const parts=html.split(/(?=<h3[\s>])/);if(parts.length<3)return html;const head=parts[0];const secs=parts.slice(1).map(s=>{const m=s.match(/<h3[^>]*>([\s\S]*?)<\/h3>/);return{t:m?m[1].replace(/<[^>]+>/g,"").trim():"…",h:s};});
- // fusiona secciones muy cortas con la anterior
- const T=[];secs.forEach(s=>{if(T.length&&s.h.replace(/<[^>]+>/g,"").length<120)T[T.length-1].h+=s.h;else T.push(s);});if(head.replace(/<[^>]+>/g,"").trim().length>40)T.unshift({t:key==="recursos"?"🧺 Recursos":"Resumen",h:head});else if(T.length)T[0].h=head+T[0].h;
- if(T.length<2)return html;let i=SUBT[key]||0;if(i>=T.length)i=0;
- return`<div class=subt>${T.map((s,j)=>`<button class="${j===i?"on":""}" onclick="SUBT['${key}']=${j};render()">${s.t.length>26?s.t.slice(0,24)+"…":s.t}</button>`).join("")}</div>${T[i].h}`;}
-Object.keys(PANELS).forEach(k=>{if(k==="investigacion")return;const o=PANELS[k];PANELS[k]=function(n){return subTabs(k,o.apply(this,arguments));};});
-(function(){const st=document.createElement("style");st.textContent=`.subt{display:flex!important;flex-direction:row!important;flex-wrap:wrap!important;gap:4px;margin:0 0 8px;position:sticky;top:0;z-index:5;background:inherit;padding:4px 0}.subt button{flex:1 1 40%!important;max-width:49%;width:auto!important;display:inline-block;margin:0!important;padding:5px 8px;font-size:.85em;border-radius:8px}.subt button.on{background:#ffd54a;color:#000;font-weight:bold}`;document.head.appendChild(st);})();
-</script><div id=ver>v4.3</div></body></html>
+// ---------- v4.4: secciones de Recursos como pestañas principales ----------
+const RECT=[["rec_pol","Políticas de trabajo",/Políticas de trabajo/],["rec_oe","Sobreextensión",/Sobreextensión/],["rec_reg","Recursos de tu región",/Recursos de tu región/],["rec_acc","Acciones",/Acciones/]];
+function recSplit(html){const parts=html.split(/(?=<h3[\s>])/);const out={recursos:parts[0]};RECT.forEach(([k])=>out[k]="");parts.slice(1).forEach(s=>{const m=s.match(/<h3[^>]*>([\s\S]*?)<\/h3>/);const t=m?m[1].replace(/<[^>]+>/g,""):"";const r=RECT.find(x=>x[2].test(t));if(r)out[r[0]]+=s;else out.recursos+=s;});return out;}
+(function(){const _rec=PANELS.recursos;PANELS.recursos=n=>recSplit(_rec(n)).recursos;RECT.forEach(([k])=>{PANELS[k]=n=>recSplit(_rec(n))[k]||"<p class=muted>Nada en esta sección todavía.</p>";});
+ const first=document.querySelector('.tab[data-v=recursos]');if(first){let prev=first;RECT.forEach(([k,l])=>{const b=document.createElement("button");b.className="tab";b.dataset.v=k;b.textContent=l;b.onclick=()=>{VIEW=k;render();};prev.after(b);prev=b;});}})();
+
+// ===== v4.4: límites históricos a la conquesta (IA y jugador) =====
+function capC(n){return n.cap>=0?PROV[n.cap].c:(provsOf(n.civ)[0]!==undefined?PROV[provsOf(n.civ)[0]].c:null);}
+function hasTechRe(n,re){return n.techs.some(i=>re.test(TECH[i].name));}
+function supplyR(n){const y=G.year;let r=y<-2000?5:y<-1000?7:y<0?12:y<1000?18:y<1500?24:y<1800?40:90;const P=[[`Época (${y<0?"antigüedad":"posterior"})`,r]];
+ if(hasTechRe(n,/carro|caballo|domestic.*caballo/i)&&y<1500){P.push(["Carros/caballos",3]);r+=3;}const rd=Math.min(roadT(n),3)*2;if(rd){P.push(["Calzadas/caminos",rd]);r+=rd;}
+ if(hasTechRe(n,/vela|nave|barco|trirreme/i)&&y<1500){P.push(["Transporte fluvial/naval",2]);r+=2;}return{r,P};}
+function conqCap(n){const y=G.year;const base=y<-2000?5:y<-1500?6:y<-1000?7:y<0?10:y<1000?14:y<1500?18:y<1800?28:60;const ad=Math.floor(Math.min(adminT(n),8)*0.75);const P=[["Época",base]];if(ad)P.push([`Administración: escribas y gobernadores (${adminT(n)} técnicas)`,ad]);
+ const emp=/Imperio|Califato|Kanato|Horda|Tahuantinsuyo/.test(civ(n.civ).name)?(y<0?3:5):0;if(emp)P.push(["Estado imperial",emp]);return{c:base+ad+emp,P};}
+function farProvs(n){const c=capC(n);if(!c)return[];const R=supplyR(n).r;return provsOf(n.civ).filter(p=>dist(PROV[p].c,c)>R);}
+const _bt8=borderTargets;borderTargets=function(att,def){const ts=_bt8(att,def);if(!G||!att)return ts;const c=capC(att);const R=supplyR(att).r;const k=provsOf(att.civ).length;if(k>=conqCap(att).c)return[];return c?ts.filter(p=>dist(PROV[p].c,c)<=R):ts;};
+// ingresos: provincias fuera del alcance logístico rinden la mitad; salinización
+const MESO=/\((Irak|Kuwait)\)/;
+function salin(n){if(G.year<-2400||G.year>-1600)return 0;return provsOf(n.civ).filter(p=>MESO.test(PROV[p].name)&&PROV[p].b!=="m").length;}
+const _income8=income;income=function(n){const r=_income8(n);if(!G||!n||!n.civ)return r;const k=provsOf(n.civ).length;if(!k)return r;const f=farProvs(n).length;
+ if(f){const m=1-0.5*f/k;const dg=Math.round(r.gold*(1-m)),df=Math.round(r.food*(1-m));r.gold-=dg;r.food-=df;r.goldP=(r.goldP||[]).concat([[`${f} provincia(s) fuera del alcance logístico rinden la mitad`,-dg]]);r.farFood=-df;}
+ const s=salin(n);if(s){const d=Math.round(r.food*0.15*s/k);r.food-=d;r.salFood=-d;}return r;};
+// cansancio de guerra, crisis sucesorias, nómadas, salinización
+function freeProvs(n,ps,why){if(!ps.length)return;const nm=ps.map(p=>locName(p));ps.forEach(p=>{G.owner[p]=null;});const t=`${why}: ${nm.slice(0,5).join(", ")}${nm.length>5?"…":""} se separan de ${short(n.civ)} como ${G.year<0?"ciudades-estado y señoríos independientes":"señoríos independientes"}.`;tl(t,0);addLog(t);checkDead();}
+function farthest(n,k){const c=capC(n);return provsOf(n.civ).filter(p=>p!==n.cap).sort((a,b)=>dist(PROV[b].c,c)-dist(PROV[a].c,c)).slice(0,k);}
+function limitsTurn(){const s=G.step/25;Object.values(G.nations).forEach(n=>{if(!n.alive)return;const k=provsOf(n.civ).length;const wars=Object.keys(n.war||{}).length;
+ n.wex=n.wex||0;if(wars){n.wex=Math.min(100,n.wex+Math.round((3+k/3)*s));}else n.wex=Math.max(0,n.wex-Math.round(10*s));
+ if(n.wex>=20)n.stab=Math.max(0,n.stab-Math.round(n.wex/20*s));
+ if(n.wex>=70&&wars){Object.keys(n.war).forEach(id=>{const e=N(id);if(e)makePeace(n,e);});if(n.human||true){const t=`🕊️ ${short(n.civ)} firma la paz por agotamiento bélico (${n.wex}/100).`;addLog(t);}n.wex=Math.round(n.wex*0.6);}
+ const cc=conqCap(n).c;const over=k-cc;
+ // crisis sucesoria: muerte del gobernante en estados demasiado grandes
+ if(over>0&&rng()<Math.min(0.5,(0.1+over*0.05)*s)){const lose=Math.max(1,Math.ceil(over+k*0.15));freeProvs(n,farthest(n,lose),`👑 Muere el soberano de ${short(n.civ)} y estalla una crisis sucesoria`);n.stab=Math.max(0,n.stab-10);}
+ // nómadas y vecinos atacan imperios sobreextendidos (antigüedad)
+ else if(G.year<500&&(over>-1||oePct(n)>20)&&k>=5&&rng()<0.12*s){const lose=Math.min(2,k-3);n.army=Math.max(1,Math.round(n.army*0.8));freeProvs(n,farthest(n,lose),`🐎 Invasiones de pueblos nómadas/montañeses`);}
+ // provincias conquistadas lejanas se rebelan con baja estabilidad
+ else if(n.stab<35&&k>=4){const f=farProvs(n);if(f.length&&rng()<0.25*s)freeProvs(n,f.slice(0,2),`🔥 Revuelta de provincias lejanas (estabilidad ${n.stab}/100)`);}
+ });}
+const _advY8=advanceYear;advanceYear=function(){const r=_advY8.apply(this,arguments);try{limitsTurn();}catch(e){console.error(e);}return r;};
+// efectos activos
+const _activeFx8=activeFx;activeFx=function(n){const L=_activeFx8(n);const S=supplyR(n),C=conqCap(n);const k=provsOf(n.civ).length;
+ L.push(["Logística",`Alcance de abastecimiento ${S.r}° desde la capital (${S.P.map(([t,v])=>`${t} +${v}`).join(", ")}): no puedes conquistar más allá`,1,"según técnicas"]);
+ L.push(["Administración",`Máximo de provincias que puedes gobernar/conquistar: ${C.c} (${C.P.map(([t,v])=>`${t} +${v}`).join(", ")}); tienes ${k}`,k<C.c,"según época y técnicas"]);
+ const f=farProvs(n).length;if(f)L.push(["Logística",`${f} provincia(s) fuera de alcance: rinden −50% y pueden rebelarse si estabilidad <35 (25%/turno)`,0,"mientras sigan lejos"]);
+ if(k>C.c)L.push(["Crisis sucesoria",`Riesgo ${Math.round(Math.min(0.5,(0.1+(k-C.c)*0.05))*100)}% por turno de fractura (perderías ~${Math.ceil(k-C.c+k*0.15)} provincias)`,0,"mientras excedas el máximo"]);
+ if(n.wex)L.push(["Cansancio de guerra",`${n.wex}/100: −${Math.round(n.wex/20)} estabilidad/turno${n.wex>=20?"":" (desde 20)"}; paz forzosa a 70`,0,"baja 10/turno en paz"]);
+ const s=salin(n);if(s)L.push(["Salinización",`${s} provincia(s) de regadío mesopotámico: −15% comida proporcional (${income(n).salFood})`,0,"2400–1600 a.C."]);
+ if(G.year<500&&k>=5&&(k-C.c>-1||oePct(n)>20))L.push(["Nómadas",`12% por turno de invasión (−20% ejército, −2 provincias lejanas)`,0,"mientras estés sobreextendido"]);return L;};
+// conquista del jugador: aviso claro
+const _attackProv8=attackProv;attackProv=function(p){const n=me();if(n){const c=capC(n),S=supplyR(n),C=conqCap(n);if(provsOf(n.civ).length>=C.c){toast(`No puedes gobernar más provincias: máximo ${C.c} en esta época (sube con técnicas de administración).`);return;}if(c&&dist(PROV[p].c,c)>S.r){toast(`${locName(p)} está fuera de tu alcance logístico (${Math.round(dist(PROV[p].c,c))}° > ${S.r}°). Mejora caminos, carros o navegación.`);return;}}return _attackProv8.apply(this,arguments);};
+</script><div id=ver>v4.4</div></body></html>
