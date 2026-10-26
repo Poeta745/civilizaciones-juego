@@ -1367,6 +1367,13 @@ const st=document.createElement("style");st.textContent=`#start #plist{flex:1;mi
 function hdr(){if(!document.getElementById("plh"))P.insertAdjacentHTML("afterbegin",`<div id=plh><span>Nombre</span><span>Civilización inicial</span><span>Papel</span></div>`);
  document.getElementById("plh").style.display=P.querySelector(".pbox input[type=hidden]")?"none":"";P.classList.toggle("solo",!!P.querySelector(".pbox input[type=hidden]"));}
 new MutationObserver(()=>hdr()).observe(P,{childList:true});hdr();})();
+(function(){const S=document.getElementById("start");if(!S||typeof MU==="undefined")return;
+const d=document.createElement("div");d.id="smus";d.style.cssText="display:flex;align-items:center;gap:6px;background:#1d2330e6;border:1px solid #2d3546;border-radius:20px;padding:4px 10px;font-size:13px";
+d.innerHTML=`<button id=smb title="Activar o quitar la música" style="padding:2px 8px;border-radius:12px"></button><input id=smv type=range min=0 max=1 step=0.05 title="Volumen de la música" style="width:110px"><span id=smt style="max-width:160px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;opacity:.75;font-size:11px"></span>`;
+(document.getElementById("sft")||document.body).insertBefore(d,document.querySelector("#sft .credit"));const b=d.querySelector("#smb"),v=d.querySelector("#smv"),t=d.querySelector("#smt");
+function sync(){b.textContent=MU.on?"🎵 Música: sí":"🔇 Música: no";v.value=MU.vol;v.disabled=!MU.on;t.textContent=MU.on&&MU.cur?"♪ "+MU.cur[2]:MU.on?"(suena al primer clic)":"";d.style.display=S.style.display==="none"?"none":"flex";}
+b.onclick=e=>{e.stopPropagation();musToggle(!MU.on);sync();};v.oninput=()=>{musVol(v.value);};
+const _u=musUI;musUI=function(){_u.apply(this,arguments);sync();};setInterval(sync,1000);sync();})();
 
 /* v5.1 mundo lleno: límites de expansión escalados por era, técnica y tamaño del mapa (4033 provincias) */
 (function(){const K=PROV.length/1291;
@@ -1391,4 +1398,4 @@ const _ay12=advanceYear;advanceYear=function(){const r=_ay12.apply(this,argument
   PROV.forEach((p,i)=>{const o=G.owner[i],on=o&&N(o);if(y>=1945&&on&&!on.human&&byM[p.country]&&byM[p.country]!==o&&homeM(on)!==p.country&&rng()<0.25*G.step/25){G.owner[i]=byM[p.country];return;}if(!G.owner[i]&&byM[p.country]&&rng()<0.35*G.step/25)G.owner[i]=byM[p.country];});}
  return r;};
 })();
-</script><div id=ver>v5.2</div></body></html>
+</script><div id=ver>v5.3</div></body></html>
