@@ -1107,4 +1107,13 @@ const _render7u=render;render=function(){_render7u.apply(this,arguments);if(!G||
 function unrestBadges(){const g=$("#plabels");if(!g||!G)return;const n=me();g.querySelectorAll(".ubdg").forEach(e=>e.remove());const r=$("#map").getBoundingClientRect();const k=360/(r.width*Z.z||1);let h="";provsOf(n.civ).forEach(p=>{if(p===n.cap)return;const u=unrest(n,p);const[lo,la]=PROV[p].c;const x=lo+180+k*10,y=90-la-k*10;h+=`<g class=ubdg><title>${unrestTip(n,p)}</title><circle cx="${x}" cy="${y}" r="${k*7}" fill="${unrestCol(u)}" stroke="#000" stroke-width="${k}"/><text x="${x}" y="${y+k*3}" font-size="${k*8}" text-anchor="middle" fill="#000">${u}</text></g>`;});g.insertAdjacentHTML("beforeend",h);}
 (function(){const st=document.createElement("style");st.textContent=`.fxl{margin:4px 0 6px 16px;padding:0;font-size:.85em}.fxt td{padding:3px 6px;font-size:.85em;border-bottom:1px solid #333}`;document.head.appendChild(st);})();
 const _provLabels7=provLabels;provLabels=function(){_provLabels7.apply(this,arguments);unrestBadges();};
+// ---------- v4.3: sub-pestañas para paneles largos ----------
+var SUBT={};
+function subTabs(key,html){const parts=html.split(/(?=<h3[\s>])/);if(parts.length<3)return html;const head=parts[0];const secs=parts.slice(1).map(s=>{const m=s.match(/<h3[^>]*>([\s\S]*?)<\/h3>/);return{t:m?m[1].replace(/<[^>]+>/g,"").trim():"…",h:s};});
+ // fusiona secciones muy cortas con la anterior
+ const T=[];secs.forEach(s=>{if(T.length&&s.h.replace(/<[^>]+>/g,"").length<120)T[T.length-1].h+=s.h;else T.push(s);});if(head.replace(/<[^>]+>/g,"").trim().length>40)T.unshift({t:key==="recursos"?"🧺 Recursos":"Resumen",h:head});else if(T.length)T[0].h=head+T[0].h;
+ if(T.length<2)return html;let i=SUBT[key]||0;if(i>=T.length)i=0;
+ return`<div class=subt>${T.map((s,j)=>`<button class="${j===i?"on":""}" onclick="SUBT['${key}']=${j};render()">${s.t.length>26?s.t.slice(0,24)+"…":s.t}</button>`).join("")}</div>${T[i].h}`;}
+Object.keys(PANELS).forEach(k=>{if(k==="investigacion")return;const o=PANELS[k];PANELS[k]=function(n){return subTabs(k,o.apply(this,arguments));};});
+(function(){const st=document.createElement("style");st.textContent=`.subt{display:flex!important;flex-direction:row!important;flex-wrap:wrap!important;gap:4px;margin:0 0 8px;position:sticky;top:0;z-index:5;background:inherit;padding:4px 0}.subt button{flex:1 1 40%!important;max-width:49%;width:auto!important;display:inline-block;margin:0!important;padding:5px 8px;font-size:.85em;border-radius:8px}.subt button.on{background:#ffd54a;color:#000;font-weight:bold}`;document.head.appendChild(st);})();
 </script><div id=ver>v4.3</div></body></html>
