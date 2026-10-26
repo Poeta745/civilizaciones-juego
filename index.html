@@ -1627,9 +1627,9 @@ function trimTo(n,k){const ps=provsOf(n.civ);if(ps.length<=k)return;const c=capC
 const _sp18=spawn;spawn=function(id){const n=_sp18.apply(this,arguments);try{if(n&&n.alive&&!n.human)trimTo(n,histSize(n));}catch(e){}return n;};
 // sucesión: si el árbol da varias sucesoras, se reparten por cercanía; cada una nace con su tamaño histórico
 const _sc18=syncCivs;/*trim*/syncCivs=function(){const before={};Object.values(G.nations).forEach(n=>{if(n.alive)before[n.civ]=1;});
- const ob=G.owner.slice();const r=_sc18.apply(this,arguments);try{const rr=rowAt(G.year);for(let p=0;p<G.owner.length;p++){const o=G.owner[p];if(!o||o===ob[p]||!ob[p])continue;const t=N(o);if(!t||t.human||p===t.cap)continue;const c=t.cap>=0?t.cap:p;const tv=dec(rr,c),pv=dec(rr,p);
+ const ob=G.owner.slice();const INH={};const r=_sc18.apply(this,arguments);try{const rr=rowAt(G.year);for(let p=0;p<G.owner.length;p++){const o=G.owner[p];if(!o||o===ob[p]||!ob[p])continue;if(window.euHeir&&euHeir(ob[p],o)&&N(ob[p])&&ownPol(N(ob[p]),p)){if(!ownPol(N(o),p)){const alt=Object.values(G.nations).find(e=>e.alive&&e.civ!==o&&!e.human&&e.cap>=0&&ownPol(e,p)&&euHeir(ob[p],e.civ));const alt2=alt||Object.values(G.nations).find(e=>e.alive&&e.civ!==o&&!e.human&&e.cap>=0&&ownPol(e,p)&&dist(PROV[e.cap].c,PROV[p].c)<15);if(alt2){G.owner[p]=alt2.civ;INH[alt2.civ]=(INH[alt2.civ]||0)+1;if(window.WS)WS["reasig"]=(WS["reasig"]||0)+1;continue;}}INH[o]=(INH[o]||0)+1;continue;}const t=N(o);if(!t||t.human||p===t.cap)continue;const c=t.cap>=0?t.cap:p;const tv=dec(rr,c),pv=dec(rr,p);
   const keep=ownPol(t,p)||isSt(tv)?(pv===tv||ownPol(t,p)):dist(PROV[p].c,PROV[c].c)<=8;if(!keep)G.owner[p]=null;}}catch(e){}
- Object.values(G.nations).forEach(t=>{if(t.alive&&!before[t.civ]&&!t.human){try{trimTo(t,histSize(t));}catch(e){}}});return r;};
+ Object.values(G.nations).forEach(t=>{if(t.alive&&!before[t.civ]&&!t.human){try{trimTo(t,Math.max(histSize(t),INH[t.civ]||0));if(INH[t.civ]){G.inh=G.inh||{};G.inh[t.civ]={n:INH[t.civ],y:G.year};}}catch(e){}}});return r;};
 const _fx18=activeFx;activeFx=function(n){const L=_fx18(n);L.push(["Pueblos sin estado",`colonizar su tierra exige vencerlos o negociar (fuerza ${natStr(provsOf(n.civ)[0]||0,n)}+ según interior/región); fracaso = −ejército`,0,"hasta 1900"]);return L;};
 ;window.__H={rowAt,dec,isSt,SZ,claims,ownPol,nextOk,R,Y};})();
 
@@ -1651,7 +1651,7 @@ let SN=0;
 const AQ={};function successor(grp){const y=G.year;const r=rowAt(y);const pv=dec(r,grp[0]);if(isSt(pv)){const m=CIVS.filter(c=>c.start<=y&&c.end>y&&!G.spawned.includes(c.id)&&!G.prevent.includes(c.id)&&ANCH[c.id]).find(c=>{const a=ANCH[c.id];if(!(c.id in AQ))AQ[c.id]=nearestProv(a[0],a[1]);const q=AQ[c.id];return q>=0&&dec(r,q)===pv;});if(m)return m;}let best=null,bd=1e9;CIVS.forEach(c=>{if(c.start>y||c.end<=y||G.spawned.includes(c.id)||G.prevent.includes(c.id))return;const a=ANCH[c.id];if(!a)return;grp.forEach(p=>{const d=dist(PROV[p].c,a);if(d<bd){bd=d;best=c;}});});return bd<=6?best:null;}
 function uprisings(){const f=G.step/25,r=rowAt(G.year);Object.values(G.nations).forEach(n=>{if(!n.alive)return;const ps=provsOf(n.civ);if(ps.length<2)return;const G2={};
  ps.forEach(p=>{if(p===n.cap)return;const s=sep(n,p);if(!s)return;const v=dec(r,p);const key=isSt(v)?"s"+v:"f"+Math.round(PROV[p].c[0]/8)+":"+Math.round(PROV[p].c[1]/8);(G2[key]=G2[key]||[]).push([p,s]);});
- Object.values(G2).forEach(g=>{if(!n.alive)return;const avg=g.reduce((a,x)=>a+x[1],0)/g.length;const un=g.reduce((a,x)=>a+unrest(n,x[0]),0)/g.length;if(rng()>Math.min(0.6,un/100*SF.rate*f*(window.euSteppe&&euSteppe(n)&&euHist(n)&&ps.length>1.3*euHist(n)?4:1)))return;
+ Object.values(G2).forEach(g=>{if(!n.alive)return;const avg=g.reduce((a,x)=>a+x[1],0)/g.length;const un=g.reduce((a,x)=>a+unrest(n,x[0]),0)/g.length;if(rng()>Math.min(0.6,un/100*SF.rate*f*(window.euSteppe&&euSteppe(n)&&euHist(n)&&ps.length>1.3*euHist(n)?8:(window.euOver?euOver(n,ps.length):1))))return;
   const grp=g.map(x=>x[0]);const reb=grp.length*2+un/10;const gar=power(n)*grp.length/ps.length*3*(0.5+n.stab/100);const win=rng()<reb/(reb+gar);
   if(window.WS){WS[win?'sepWin':'sepLoss']=(WS[win?'sepWin':'sepLoss']||0)+1;if(win){const kk='sv:'+civ(n.civ).name;WS[kk]=(WS[kk]||0)+grp.length;}}
   if(!win){n.army=Math.max(1,Math.round(n.army*0.95));if(n.human)addLog(`🔥 Rebeldes derrotados en ${locName(grp[0])} (separatismo ${Math.round(avg)}).`);return;}
@@ -1677,7 +1677,7 @@ const _fx=activeFx;activeFx=function(n){const L=_fx(n);const ps=provsOf(n.civ);c
  if(f>0)L.push(["Sobreextensión: economía",`${Math.round(o*100)}% → −${Math.round(f*100)}% oro y producción (y menos reclutas)`,0,"hasta integrar"]);
  if(nc.length){const q=nc[0];const[t,pt]=coreTime(q,n.civ);L.push(["Integración (núcleo)",`${nc.length} provincias sin integrar; p. ej. ${locName(q)}: ${t} años = ${pt.map(x=>x[0]+" "+x[1]).join(" · ")}`,0,"por provincia"]);}
  L.push(["Capacidad de gobierno",`${Math.round(0.5+n.techs.length*0.05+(window.euHist?0:0))*1}+ provincias fuera de tu territorio histórico sin penalización (0,5 + 0,05 × ${n.techs.length} técnicas); más allá, expandirse es mucho más difícil`,0,"crece con la tecnología"]);
- if(window.euSteppe(n))L.push(["Horda nómada","con sobreextensión >30%, provincias a más de 8° de la capital: +1,5 separatismo por grado (máx. +30)"+((euHist(n)&&provsOf(n.civ).length>1.3*euHist(n))?`. Crisis de sucesión: tienes ${provsOf(n.civ).length} provincias, más de 1,3× tu tamaño histórico (${euHist(n)}) → revueltas separatistas ×4 más probables`:""),0,"permanente"]);
+ if(window.euSteppe(n))L.push(["Horda nómada","con sobreextensión >30%, provincias a más de 8° de la capital: +1,5 separatismo por grado (máx. +30)"+((euHist(n)&&provsOf(n.civ).length>1.3*euHist(n))?`. Crisis de sucesión: tienes ${provsOf(n.civ).length} provincias, más de 1,3× tu tamaño histórico (${euHist(n)}) → revueltas separatistas ×8 más probables`:""),0,"permanente"]);
  L.push(["Expansión agresiva no histórica",`conquistar fuera de tus reclamaciones históricas genera ×${V.aeNonHist} de expansión agresiva (coaliciones)`,0,"permanente"]);return L;};
 })();
 // v6.6: alcance de gobierno — expandirse a tierras sin estado fuera de tu zona histórica es más difícil si ya superas tu tamaño histórico (igual para todos)
@@ -1685,6 +1685,27 @@ const _fx=activeFx;activeFx=function(n){const L=_fx(n);const ps=provsOf(n.civ);c
  window.euReach=function(n,p){if(p!=null&&window.euOwnPol&&euOwnPol(n,p))return{f:1};const h=window.euHist?euHist(n):0;const k=provsOf(n.civ).length;if(!h||k<=h)return{f:1,k,h};const f=Math.max(RE.min,Math.pow(h/k,RE.pow));return{f,k,h};};
  const _si=settleInfo;settleInfo=function(n,p,col){const s=_si(n,p,col);const r=euReach(n,p);if(r.f<1){s.risk=Math.min(0.95,1-(1-s.risk)*r.f);s.reach=`Alcance de gobierno: ${r.k} provincias vs ${r.h} históricas → éxito ×${r.f.toFixed(2)}`;}return s;};
  const _af=activeFx;activeFx=function(n){const L=_af.apply(this,arguments);const r=euReach(n,null);if(r.f<1)L.push(["Alcance de gobierno",`Tienes ${r.k} provincias y tu tamaño histórico es ${r.h}: expandirte a tierras sin estado fuera de tu zona histórica tiene probabilidad ×${r.f.toFixed(2)} ((${r.h}/${r.k})²)`,false,"mientras superes tu tamaño histórico"]);return L;};
+})();
+
+// v6.7: herencia de sucesoras — la sucesora histórica conserva todo lo que tenía su predecesora
+window.euHeir=(a,b)=>{try{const ca=civ(a),cb=civ(b);if(!ca||!cb)return false;if((civTo(a)||[]).some(x=>x===b||resolveSucc(x)===b))return true;return (cb.from||[]).includes(a);}catch(e){return false;}};
+(function(){const _af=activeFx;activeFx=function(n){const L=_af.apply(this,arguments);const h=G.inh&&G.inh[n.civ];if(h)L.push(["Herencia del Estado predecesor",`Heredaste ${h.n} provincias de tu predecesora en ${h.y<0?(-h.y)+" a.C.":h.y}: que tu predecesora gobernó históricamente: las conservas aunque estén fuera de tu zona histórica (solo se pierden por guerra o revuelta)`,true,"permanente"]);return L;};})();
+
+// v6.7: fortalezas históricas (datos: civ, años, efecto). Solo activas si esa civ está por debajo del 80% de su tamaño histórico; mismas reglas para quien cumpla las condiciones.
+(function(){const TR=[
+ {civs:["rusia_zar","urss","rusia"],y:[1550,2026],M:3,reach:1,n:"Cosacos y colonización de Siberia",t:"los cosacos y los streltsy llevaron al zar hasta el Pacífico"}];
+ const FT={min:0.2};
+ const act=n=>{const r=window.euRQ?euRQ(n,null):null;if(!r||r.d<FT.min)return null;const t=TR.find(t=>t.civs.includes(n.civ)&&G.year>=t.y[0]&&G.year<=t.y[1]);return t?{t,r}:null;};
+ window.euFrontM=n=>{const a=act(n);return a?1+(a.t.M-1)*a.r.d/(1-FT.min):1;};
+ window.euFront=(n,q)=>{const a=act(n);return !!(a&&a.t.reach&&window.euOwnNow&&euOwnNow(n,q));};
+ const _si=settleInfo;settleInfo=function(n,p,col){const s=_si(n,p,col);const a=act(n);if(a&&euFront(n,p)){const m=euFrontM(n);s.risk=Math.max(0.02,s.risk/m);if(s.cost)for(const k in s.cost)s.cost[k]=Math.ceil(s.cost[k]/m);s.reach=(s.reach?s.reach+". ":"")+`${a.t.n}: coste y riesgo ÷${m.toFixed(2)}`;}return s;};
+ const _af=activeFx;activeFx=function(n){const L=_af.apply(this,arguments);const a=act(n);if(a){const m=euFrontM(n);L.push([a.t.n,`Fortaleza histórica (${a.t.t}). Estás al ${a.r.pct}% de tu tamaño histórico (${provsOf(n.civ).length} de ${euHist(n)} provincias): colonizas las tierras libres de tu zona histórica ×${m.toFixed(2)} más rápido, sin límite de distancia de suministro, y tus asentamientos allí cuestan y arriesgan ÷${m.toFixed(2)}`,true,`de ${a.t.y[0]<0?(-a.t.y[0])+" a.C.":a.t.y[0]} a ${a.t.y[1]<0?(-a.t.y[1])+" a.C.":a.t.y[1]}, mientras estés por debajo del 80% de tu tamaño histórico`]);}return L;};
+})();
+
+// v6.7: sobreextensión (mismas reglas para todos): con más del OXT× de tu tamaño histórico, las revueltas separatistas son OXM× más probables.
+(function(){const OX={t:1.3,m:5};window.OX=OX;
+ window.euOver=(n,k)=>{const h=window.euHist?euHist(n):0;return h>0&&k>OX.t*h?OX.m:1;};
+ const _af=activeFx;activeFx=function(n){const L=_af.apply(this,arguments);try{const h=euHist(n),k=provsOf(n.civ).length;if(h>0&&k>OX.t*h)L.push(["Sobreextensión",`Tienes ${k} provincias, más de ${OX.t}× tu tamaño histórico (${h}) en el año ${G.year}: revueltas separatistas ×${OX.m} más probables hasta que bajes de ${Math.floor(OX.t*h)}.`]);}catch(e){}return L;};
 })();
 
 // ===== v6.6: mapa sobrio estilo EU4 =====
@@ -1703,4 +1724,4 @@ const UMIN=35;
 unrestBadges=function(){const g=$("#plabels");if(!g||!G)return;const n=me();g.querySelectorAll(".ubdg").forEach(e=>e.remove());if(Z.z<3)return;const r=$("#map").getBoundingClientRect();const k=360/(r.width*Z.z||1);let h="";
  provsOf(n.civ).forEach(p=>{if(p===n.cap)return;const u=unrest(n,p);if(u<UMIN)return;const[lo,la]=PROV[p].c;const x=lo+180+k*8,y=90-la-k*8;const col=u<50?"#c9a64a":u<65?"#c07a3a":"#a94438";
   h+=`<g class=ubdg><title>Descontento de esta provincia: ${u}% (riesgo de revuelta). ${unrestTip(n,p)}</title><circle cx="${x}" cy="${y}" r="${k*4.5}" fill="${col}" fill-opacity=".85" stroke="#1a1308" stroke-opacity=".6" stroke-width="${k*.5}"/><text x="${x}" y="${y+k*1.8}" font-size="${k*5}" text-anchor="middle" fill="#fff">${u}</text></g>`;});g.insertAdjacentHTML("beforeend",h);};
-</script><div id=ver>v6.6</div></body></html>
+</script><div id=ver>v6.7</div></body></html>
