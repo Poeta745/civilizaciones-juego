@@ -18,7 +18,7 @@ GPL-3.0 (ver `LICENSE`), por incluir datos de historical-basemaps.
 
 ## Música (v4.9)
 
-34 pistas libres alojadas en Wikimedia Commons (dominio público, CC0 o CC BY). Se cargan solo al reproducirse. El juego elige la música según el ambiente (paz, guerra, descubrimiento o derrota) y la era, con fundido cruzado, volumen y botón de activar/desactivar. Los créditos también aparecen dentro del juego (🎵 → Créditos).
+34 pistas libres de Wikimedia Commons (dominio público, CC0 o CC BY). Cada pista tiene además una copia MP3 de 96 kbps en `music/NN.mp3` (transcodificada con ffmpeg, sin cambios en la obra), para Safari y otros navegadores sin OGG; el juego elige OGG o MP3 según `canPlayType`. Se cargan solo al reproducirse. El juego elige la música según el ambiente (paz, guerra, descubrimiento o derrota) y la era, con fundido cruzado, volumen y botón de activar/desactivar. Los créditos también aparecen dentro del juego (🎵 → Créditos).
 
 | # | Pista | Autor/intérprete | Licencia | Ambiente / era | Fuente |
 |---|---|---|---|---|---|
@@ -56,3 +56,18 @@ GPL-3.0 (ver `LICENSE`), por incluir datos de historical-basemaps.
 | 32 | Peer Gynt Suite No. 1, Op. 46 - II. Aase's Death | Musopen Symphony Orchestra | CC0 | derrota / industrial | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Peer_Gynt_Suite_No._1,_Op._46_-_II._Aase%27s_Death.ogg) |
 | 33 | Kevin MacLeod - Camille Saint-Sans Danse Macabre - Sad Part | Kevin MacLeod | CC BY 3.0 | derrota / industrial | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Kevin_MacLeod_-_Camille_Saint-Sans_Danse_Macabre_-_Sad_Part.ogg) |
 | 34 | Chopin, Nocturne in C-sharp minor, Op. Posth | Frédéric Chopin | CC BY 3.0 | derrota / industrial | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Chopin,_Nocturne_in_C-sharp_minor,_Op._Posth.ogg) |
+
+## Voces neuronales Piper (v5.2)
+
+Las 8 voces en español con licencia libre verificada y el motor (onnxruntime-web y piper-phonemize en WASM) están alojados en este repositorio, en `piper/`, sin CDN externo. Detalle de licencias: [piper/LICENCIAS.md](piper/LICENCIAS.md).
+
+| Voz | Licencia |
+|---|---|
+| es_ES-davefx-medium | CC0 |
+| es_ES-sharvard-medium | CC BY 3.0 |
+| es_ES-carlfm-x_low | Dominio público |
+| es_ES-mls_10246-low | CC BY 4.0 |
+| es_ES-mls_9972-low | CC BY 4.0 |
+| es_MX-ald-medium | Unlicense |
+| es_MX-claude-high | Apache-2.0 |
+| es_AR-daniela-high | CC BY-SA 4.0 |
