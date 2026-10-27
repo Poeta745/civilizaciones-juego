@@ -18,7 +18,7 @@ body{margin:0;font-family:system-ui,sans-serif;background:#12151b;color:#e8e6df}
 <h3>1. Toca la civilización con la que empiezas</h3><div class=cards id=civcards></div>
 <div class=field><label>¿Cuántas personas juegan? <span class=help onclick="hlp('np')">?</span></label><small>Se turnan en este mismo aparato.</small><select id=np onchange="setupPlayers()"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option></select><div class=hbox id=h_np>Si juegas solo, deja 1. Si son varios, cada uno juega su turno y luego le pasa el teléfono al siguiente.</div></div>
 <div class=field><label>¿Cuántos años avanza cada turno? <span class=help onclick="hlp('step')">?</span></label><small>Cada turno avanzan los años que elijas aquí; más años = partida más rápida.</small><select id=step><option value=5>5 años (muy detallada, muy larga)</option><option value=10>10 años (detallada, larga)</option><option value=25 selected>25 años (recomendado)</option><option value=50>50 años (rápida)</option><option value=100>100 años (muy rápida)</option></select><div class=hbox id=h_step>De 3000 a.C. a 2026 hay unos 5000 años: con 25 años por turno son ~200 turnos; con 100, ~50 turnos.</div></div>
-<div id=plist></div>
+<div class=field id=specrow style="font-size:13px;line-height:1.5"><label style="display:inline;margin-right:10px"><input type=checkbox id=specOn onchange="$('#fielOn').disabled=!this.checked;if(!this.checked)$('#fielOn').checked=false;$('#plist').style.display=this.checked?'none':''"> 👁 Solo mirar (la IA juega todo)</label><label style="display:inline"><input type=checkbox id=fielOn disabled> 📜 Historia fiel</label></div><div id=plist></div>
 <div class=online><h3>🌐 Jugar en línea con amigos (cada uno en su aparato, 1–12)</h3><small>Necesita internet. Uno crea la sala y comparte el código; los demás se unen.</small><div class=field><label>Tu nombre</label><input id=netname value="Jugador"></div><button onclick="hostCreate()">➕ Crear partida en línea</button> <input id=netcode placeholder="CÓDIGO" maxlength=8 style="width:110px;text-transform:uppercase"> <button onclick="clientJoin()">🔗 Unirse con código</button> <button id=resumebtn style="display:none" onclick="hostResume()">♻️ Reanudar mi sala</button><p class=muted id=netstatus></p></div>
 <h3>🏠 O jugar en este aparato</h3><button id=go onclick="startGame()" style="font-size:18px;padding:10px 24px;background:#c9952a;color:#000">▶ Empezar partida</button> <button onclick="load()">📂 Cargar partida</button>
 <p class=credit>Fronteras históricas: «historical-basemaps» de André Ourednik (github.com/aourednik/historical-basemaps), licencia GPL-3.0. Costas y provincias: Natural Earth admin-0/admin-1 (dominio público). Juego en línea: PeerJS (MIT). Fronteras aproximadas y simplificadas.</p></div>
@@ -1588,7 +1588,7 @@ const _fx17=activeFx;activeFx=function(n){const L=_fx17(n);const E=EU();const ps
 /* v6.2 pueblos sin estado resisten la colonización; nacimiento con tamaño histórico; sucesión repartida */
 (function(){const A="0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const R=HPOL.rows,Y=HPOL.years,ST=HPOL.state;const dec=(r,i)=>A.indexOf(R[r][2*i])*62+A.indexOf(R[r][2*i+1])-1;
-const rowAt=y=>{let r=0;for(let k=0;k<Y.length;k++)if(Y[k]<=y)r=k;return r;};const isSt=v=>v>=0&&ST[v]==="1";
+const rowAt=y=>{let r=0;for(let k=0;k<Y.length;k++)if(Y[k]<=y)r=k;return r;};const isSt=v=>v>=0&&ST[v]==="1";window.__H={rowAt,dec,isSt,Y};
 const SZ=R.map((_,r)=>{const m={};for(let i=0;i<PROV.length;i++){const v=dec(r,i);if(v>=0)m[v]=(m[v]||0)+1;}return m;});
 // ¿tierra de pueblos sin estado en este año?
 function natLand(p){if(G.year>=1900)return false;return !isSt(dec(rowAt(G.year),p));}
@@ -1868,7 +1868,7 @@ const _ec=expCap;expCap=function(n){const c=_ec(n);const nm=RE.test(civ(n.civ).n
 (function(){const _ai=aiTurn;aiTurn=function(n){const r=_ai.apply(this,arguments);try{if(!n.alive||n.human||G.step<5)return r;const pr=1-Math.pow(0.8,G.step/5);Object.keys(n.war).forEach(id=>{const e=N(id);if(!e||!e.alive||e.human)return;const t=n.warT[id]||0;if(t*G.step<25)return;const losing=power(n)<power(e)*0.7;if(losing||rng()<pr){makePeace(n,e);G.pz=G.pz||{};G.pz[n.civ]={e:e.civ,y:G.year};}});}catch(x){}return r;};
 const _af=activeFx;activeFx=function(n){const L=_af.apply(this,arguments);try{L.push(["Duración de las guerras",`tras 25 años de guerra puede firmarse la paz (si vas perdiendo, o con ${Math.round((1-Math.pow(0.8,G.step/5))*100)}% por turno); antes contaba 5 turnos sin importar su duración`+(G.pz&&G.pz[n.civ]?`; última paz con ${short(G.pz[n.civ].e)} (${G.pz[n.civ].y<0?(-G.pz[n.civ].y)+" a.C.":G.pz[n.civ].y})`:""),0,"siempre"]);}catch(e){}return L;};})();
 ;/* Grupos históricos (p. ej. "kanatos de Asia central" = Bujará, Jiva y Kokand): el tamaño histórico de cada estado miembro es la parte que le toca del grupo. Igual para todos */
-(function(){const GM={628:[3,"kanatos de Asia central (Bujará, Jiva, Kokand)"],575:[2,"emiratos timúridas (Herat, Samarcanda)"],429:[3,"emiratos búyidas (Fars, Yibal, Irak)"],624:[5,"estados islámicos e hindúes"],111:[7,"estados Zhou (Reinos Combatientes)"],419:[6,"reinos rajputs (Mewar, Marwar, Amber, Bikaner, Jaisalmer, Bundi)"],560:[5,"estados islámicos malayos"],140:[5,"reinos y repúblicas hindúes"],107:[5,"reinos hindúes"],490:[5,"otros principados rus"],563:[3,"reinos birmanos (Ava, Hanthawaddy, Mrauk-U)"],588:[7,"estados hausa"],625:[10,"estados shan"]};
+(function(){const GM={628:[3,"kanatos de Asia central (Bujará, Jiva, Kokand)"],575:[2,"emiratos timúridas (Herat, Samarcanda)"],429:[3,"emiratos búyidas (Fars, Yibal, Irak)"],624:[5,"estados islámicos e hindúes"],111:[7,"estados Zhou (Reinos Combatientes)"],419:[6,"reinos rajputs (Mewar, Marwar, Amber, Bikaner, Jaisalmer, Bundi)"],560:[5,"estados islámicos malayos"],140:[5,"reinos y repúblicas hindúes"],107:[5,"reinos hindúes"],490:[5,"otros principados rus"],563:[3,"reinos birmanos (Ava, Hanthawaddy, Mrauk-U)"],588:[7,"estados hausa"],625:[10,"estados shan"]};window.__GM=GM;
 const SZ=window.__H.SZ;for(let r=0;r<SZ.length;r++){const o=SZ[r];if(!o)continue;Object.keys(GM).forEach(k=>{if(o[k])o[k]=Math.max(3,Math.round(o[k]/GM[k][0]));});}window.EUGRP=GM;
 const _af=activeFx;activeFx=function(n){const L=_af.apply(this,arguments);try{if(n.cap>=0){const v=__H.dec(__H.rowAt(G.year),n.cap);if(GM[v])L.push(["Estado de un grupo histórico",`tu capital está en los ${GM[v][1]}: tu tamaño histórico es 1/${GM[v][0]} del grupo (${__H.SZ[__H.rowAt(G.year)][v]} provincias)`,0,"siempre"]);}}catch(e){}return L;};})();
 
@@ -1888,4 +1888,84 @@ const UMIN=35;
 unrestBadges=function(){const g=$("#plabels");if(!g||!G)return;const n=me();g.querySelectorAll(".ubdg").forEach(e=>e.remove());if(Z.z<3)return;const r=$("#map").getBoundingClientRect();const k=360/(r.width*Z.z||1);let h="";
  provsOf(n.civ).forEach(p=>{if(p===n.cap)return;const u=unrest(n,p);if(u<UMIN)return;const[lo,la]=PROV[p].c;const x=lo+180+k*8,y=90-la-k*8;const col=u<50?"#c9a64a":u<65?"#c07a3a":"#a94438";
   h+=`<g class=ubdg><title>Descontento de esta provincia: ${u}% (riesgo de revuelta). ${unrestTip(n,p)}</title><circle cx="${x}" cy="${y}" r="${k*4.5}" fill="${col}" fill-opacity=".85" stroke="#1a1308" stroke-opacity=".6" stroke-width="${k*.5}"/><text x="${x}" y="${y+k*1.8}" font-size="${k*5}" text-anchor="middle" fill="#fff">${u}</text></g>`;});g.insertAdjacentHTML("beforeend",h);};
-</script><div id=ver>v6.11</div></body></html>
+
+// ===== v6.12: modo espectador (la IA juega todo) y modo «Historia fiel» (solo partidas sin jugador humano) =====
+// Todo lo de este archivo se activa solo si G.spec / G.fiel; en una partida normal no cambia nada.
+(function(){
+const H=()=>window.__H;
+function fy(y){return y<0?(-y)+' a.C.':String(y);}
+function aliveN(id){const n=N(id);return n&&n.alive?n:null;}
+function flog(t){addLog('📜 '+t);try{tl(t,2);}catch(e){}}
+// --- guion de hechos históricos clave (datos del juego, como las misiones) ---
+// succ: el estado A pasa a ser B (misma corona o continuidad); conq: A conquista todo lo que queda de B; union: varios se unen en uno.
+const EVF=window.EVF=[
+ {y:-330,t:'conq',a:'macedonia',b:'persia_aq',why:'Alejandro Magno conquista el Imperio aqueménida (Gaugamela, 331 a.C.)'},
+ {y:-221,t:'conq',a:'qin',b:'zhou',why:'Qin Shi Huang unifica China (221 a.C.)'},
+ {y:-206,t:'succ',a:'qin',b:'han',why:'Cae la dinastía Qin y le sucede la Han (206 a.C.)'},
+ {y:-30,t:'conq',a:'roma_rep',b:'ptolemaico',why:'Roma anexiona el Egipto ptolemaico (30 a.C.)'},
+ {y:-27,t:'succ',a:'roma_rep',b:'roma_imp',why:'Augusto: la República romana pasa a ser el Imperio (27 a.C.)'},
+ {y:224,t:'succ',a:'partos',b:'sasanidas',why:'Ardashir I derroca a los partos y funda el Imperio sasánida (224)'},
+ {y:651,t:'conq',a:'califato_rash',b:'sasanidas',why:'El califato conquista el Imperio sasánida (651)'},
+ {y:1279,t:'conq',a:'yuan',b:'song',why:'Kublai Kan completa la conquista de la China Song (1279)'},
+ {y:1368,t:'succ',a:'yuan',b:'ming',why:'La dinastía Ming expulsa a los Yuan (1368)'},
+ {y:1453,t:'conq',a:'otomano',b:'bizancio',why:'Mehmed II conquista Constantinopla (1453)'},
+ {y:1492,t:'conq',a:'castilla',b:'granada',why:'Los Reyes Católicos toman Granada (1492)'},
+ {y:1516,t:'union',a:['castilla','aragon'],b:'espana_imp',why:'Carlos I hereda Castilla y Aragón: Monarquía hispánica (1516)'},
+ {y:1521,t:'conq',a:'espana_imp',b:'mexicas',why:'Caída de Tenochtitlan (1521)'},
+ {y:1533,t:'conq',a:'espana_imp',b:'inca',why:'Conquista del Imperio inca (1533)'},
+ {y:1547,t:'succ',a:'moscovia',b:'rusia_zar',why:'Iván IV se corona zar: Zarato ruso (1547)'},
+ {y:1644,t:'conq',a:'qing',b:'ming',why:'Los manchúes toman Pekín: dinastía Qing (1644)'},
+ {y:1707,t:'union',a:['inglaterra','escocia'],b:'gran_bretana',why:'Acta de Unión: Reino de Gran Bretaña (1707)'},
+ {y:1871,t:'succ',a:'prusia',b:'alemania_imp',why:'Unificación alemana: Imperio alemán (1871)'},
+ {y:1912,t:'succ',a:'qing',b:'china_rep',why:'Revolución de Xinhai: República de China (1912)'},
+ {y:1922,t:'succ',a:'rusia_zar',b:'urss',why:'Se funda la Unión Soviética (1922)'}];
+function ensure(id,cap){let n=aliveN(id);if(n)return n;if(!civ(id))return null;n=N(id);if(!n){n=newNation(id,false);G.nations[id]=n;}n.alive=true;if(!G.spawned.includes(id))G.spawned.push(id);if(cap>=0)n.cap=cap;return n;}
+function moveAll(fromIds,to){let k=0;G.owner.forEach((o,i)=>{if(fromIds.includes(o)){G.owner[i]=to.civ;k++;}});return k;}
+function runEv(e){
+ if(e.t==='conq'){const a=aliveN(e.a),b=aliveN(e.b);if(!a||!b){flog(`${fy(e.y)}: no ocurre «${e.why}» (${!a?short(e.a):short(e.b)} ya no existe en esta partida).`);return;}const k=moveAll([b.civ],a);a.army+=Math.round(b.army/2);flog(`${fy(e.y)} — ${e.why}: ${short(a.civ)} recibe ${k} provincias de ${short(b.civ)}.`);}
+ else{const src=(e.t==='union'?e.a:[e.a]).filter(aliveN);if(!src.length){flog(`${fy(e.y)}: no ocurre «${e.why}» (sus estados ya no existen en esta partida).`);return;}const s0=N(src[0]);const t=ensure(e.b,s0.cap);if(!t)return;const k=moveAll(src.filter(x=>x!==e.b),t);src.forEach(x=>{if(x===e.b)return;const s=N(x);t.army+=s.army;t.gold+=s.gold;s.techs.forEach(q=>{if(!t.techs.includes(q))t.techs.push(q);});Object.keys(s.war).forEach(w=>{if(w!==t.civ&&aliveN(w)){t.war[w]=1;N(w).war[t.civ]=1;t.warT[w]=0;}});});G.prevent=G.prevent.filter(x=>x!==e.b);flog(`${fy(e.y)} — ${e.why}: ${src.map(short).join(' y ')} → ${short(t.civ)} (${k} provincias).`);}
+ checkDead();}
+// --- consolidación según el mapa histórico: cada territorio histórico pasa entero al estado que tiene la mayor parte ---
+function uninh(p){const h=H(),r=h.rowAt(2026);return !h.isSt(h.dec(r,p));}
+window.fielUninh=uninh;
+function consolidate(y,minShare){const h=H(),r=h.rowAt(y);const L={};for(let p=0;p<PROV.length;p++){const v=h.dec(r,p);if(!h.isSt(v))continue;(L[v]=L[v]||[]).push(p);}const got={};let tot=0;
+ for(const v in L){if(window.__GM&&__GM[v])continue;const ps=L[v];const c={};ps.forEach(p=>{const o=G.owner[p];if(o&&aliveN(o))c[o]=(c[o]||0)+1;});let best=null,bk=0;for(const o in c)if(c[o]>bk){bk=c[o];best=o;}if(!best||bk<minShare*ps.length)continue;ps.forEach(p=>{if(G.owner[p]!==best){G.owner[p]=best;got[best]=(got[best]||0)+1;tot++;}});}
+ if(tot){const top=Object.entries(got).sort((a,b)=>b[1]-a[1]);flog(`${fy(y)} — Fronteras del mapa histórico de ${fy(y)}: cada territorio pasa entero al estado que domina al menos el ${Math.round(minShare*100)}% (${tot} provincias; ${top.slice(0,6).map(([o,k])=>short(o)+' +'+k).join(', ')}${top.length>6?'…':''}).`);}
+ checkDead();}
+// --- desde 1900 no queda tierra sin dueño, salvo islas deshabitadas (sin estado en el mapa de 2026) ---
+function settle(){const h=H(),r=h.rowAt(G.year);let k=0;const got={};
+ for(let pass=0;pass<40;pass++){let ch=0;for(let p=0;p<PROV.length;p++){if(G.owner[p]||uninh(p))continue;let o=null;const v=h.dec(r,p);if(h.isSt(v)){const c={};for(let q=0;q<PROV.length;q++)if(h.dec(r,q)===v&&G.owner[q]&&aliveN(G.owner[q]))c[G.owner[q]]=(c[G.owner[q]]||0)+1;let bk=0;for(const x in c)if(c[x]>bk){bk=c[x];o=x;}}
+  if(!o){const nb=PROV[p].nb.concat(PROV[p].sea||[]).map(q=>G.owner[q]).filter(x=>x&&aliveN(x));if(nb.length)o=nb[0];else if(pass>=3){let bd=1e9;for(let q=0;q<PROV.length;q++){const x=G.owner[q];if(!x||!aliveN(x))continue;const d=dist(PROV[q].c,PROV[p].c);if(d<bd){bd=d;o=x;}}}}
+  if(o){G.owner[p]=o;got[o]=(got[o]||0)+1;k++;ch++;}}if(!ch)break;}
+ if(k){const top=Object.entries(got).sort((a,b)=>b[1]-a[1]);flog(`${fy(G.year)} — Ocupación de tierras sin dueño (desde 1900 todo territorio habitado tiene estado): ${k} provincias (${top.slice(0,6).map(([o,n])=>short(o)+' +'+n).join(', ')}${top.length>6?'…':''}).`);}}
+// --- 2026: los estados del mapa de 2026 que faltan se crean ---
+function final2026(){const h=H(),r=h.rowAt(2026);const L={};for(let p=0;p<PROV.length;p++){const v=h.dec(r,p);if(!h.isSt(v))continue;(L[v]=L[v]||[]).push(p);}let made=0,mp=0;const nm=[];
+ for(const v in L){const ps=L[v];const c={};ps.forEach(p=>{const o=G.owner[p];if(o&&aliveN(o))c[o]=(c[o]||0)+1;});const bk=Math.max(0,...Object.values(c));if(bk>=0.5*ps.length)continue;
+  const sc=successor(ps);let id;if(sc&&!aliveN(sc.id)){id=sc.id;}else{id='mod_'+v+'_'+(G.turn);G.extra[id]={id,name:'Estado de '+locName(ps[0]),era:'C',start:2026,end:2100,region:civ(G.owner[ps[0]]||'')?civ(G.owner[ps[0]]).region:'',from:[],to:[],people:[],events:[]};ANCH[id]=PROV[ps[0]].c;}
+  const t=ensure(id,ps[0]);if(!t)continue;t.techs=TECH.filter(q=>q.year<=2026).map(q=>q.id);ps.forEach(p=>G.owner[p]=id);t.cap=ps[0];made++;mp+=ps.length;nm.push(short(id)+' ('+ps.length+')');}
+ if(made)flog(`2026 — Estados del mapa de 2026 que faltaban: se crean ${made} (${mp} provincias): ${nm.slice(0,8).join(', ')}${nm.length>8?'…':''}.`);
+ consolidate(2026,0.3);settle();checkDead();}
+const _ay=advanceYear;advanceYear=function(){const y0=G.year;const r=_ay.apply(this,arguments);if(!G||!G.fiel)return r;try{
+  EVF.filter(e=>e.y>y0&&e.y<=G.year).forEach(runEv);
+  const h=H();h.Y.forEach(Y=>{if(Y>y0&&Y<=G.year&&Y<2026)consolidate(Y,0.4);});
+  if(G.year>=1900)settle();
+  if(G.year>=2026&&!G.fielDone){G.fielDone=true;final2026();}
+ }catch(e){console.error(e);}return r;};
+window.fielStats=function(){let u=0,ui=0;for(let p=0;p<PROV.length;p++){if(G.owner[p])continue;if(uninh(p))ui++;else u++;}return{sinDueno:u,islasDeshabitadas:ui};};
+// ===== espectador: la IA juega todas las civilizaciones; tú solo miras =====
+let VIEWF=false;const ALLK=new Proxy({},{get:()=>1,has:()=>true});
+const _known=known;known=function(n){return(G&&G.spec&&VIEWF)?ALLK:_known(n);};
+const _me=me;me=function(){if(G&&G.spec&&VIEWF){const n=N(G.follow)||Object.values(G.nations).find(n=>n.alive);return n?new Proxy(n,{get:(t,k)=>k==='known'?ALLK:t[k]}):n;}return _me();};
+function inView(f){return function(){if(!(G&&G.spec))return f.apply(this,arguments);const o=VIEWF;VIEWF=true;try{return f.apply(this,arguments);}finally{VIEWF=o;}};}
+render=inView(render);drawMap=inView(drawMap);if(typeof drawLabels==='function')drawLabels=inView(drawLabels);
+document.addEventListener('click',e=>{if(G&&G.spec){VIEWF=true;setTimeout(()=>{VIEWF=false;},0);}},true);
+function pickFollow(){const a=Object.values(G.nations).filter(n=>n.alive&&provsOf(n.civ).length).sort((x,y)=>provsOf(y.civ).length-provsOf(x.civ).length)[0];if(a)G.follow=a.civ;}
+function drainQ(){let g=0;while(G.queue.length&&g++<60){const q=G.queue[0];try{if(q.type==='defeat')G.queue.shift();else if(q.type==='tp')resolveTP(-1);else if(q.type==='char')resolveChar(0);else if(q.type==='dec')resolveDec(0);else if(q.type==='abol')resolveAbol(1);else if(q.type==='dis')resolveDis(true);else if(q.type==='evo')resolveEvo(q.opts[0]);else if(q.type==='tradeoffer')resolveTrade(1);else G.queue.shift();}catch(e){G.queue.shift();}}G.queue.length=0;}
+window.specStep=function(){if(!G||!G.spec)return;if(G.year>=2026){specAuto(false);toast('La partida ha llegado a 2026.');return;}drainQ();advanceYear();drainQ();pickFollow();render();};
+let AUTO=null;window.specAuto=function(on){if(AUTO){clearInterval(AUTO);AUTO=null;}if(on)AUTO=setInterval(specStep,900);const b=document.getElementById('specauto');if(b)b.textContent=AUTO?'⏸ Pausa':'⏩ Automático';};
+window.startSpectator=function(fiel){const st=+$("#step").value;newGame([{name:'Espectador',civ:STARTERS[0].id,role:'espectador'}],st);const n=N(STARTERS[0].id);if(n)n.human=false;G.players[0].civ='__ia';G.spec=true;G.fiel=!!fiel;pickFollow();addLog(fiel?'📜 Modo «Historia fiel»: la IA juega todo y los grandes hechos históricos ocurren en su fecha.':'👁 Modo espectador: la IA juega todas las civilizaciones.');document.body.classList.add('spec');showGame();render();specBar();};
+function specBar(){let b=document.getElementById('specbar');if(!b){b=document.createElement('div');b.id='specbar';b.style.cssText='display:flex;gap:6px;flex-wrap:wrap;padding:4px 0';b.innerHTML=`<button onclick="specStep()">▶ Avanzar ${G.step} años</button><button id=specauto onclick="specAuto(!document.getElementById('specauto').textContent.includes('Pausa'))">⏩ Automático</button><span class=muted style="font-size:12px;align-self:center">${G.fiel?'📜 Historia fiel · ':''}👁 Siguiendo a la civilización más grande</span>`;const e=document.getElementById('endbtn');e.parentNode.insertBefore(b,e);}}
+const st=document.createElement('style');st.textContent='body.spec #endbtn,body.spec #panel button,body.spec #panel select,body.spec #panel input{display:none!important}';document.head.append(st);
+const _sg=startGame;startGame=function(){const s=document.getElementById('specOn');if(s&&s.checked){const f=document.getElementById('fielOn');return startSpectator(f&&f.checked);}return _sg.apply(this,arguments);};
+})();
+</script><div id=ver>v6.12</div></body></html>
