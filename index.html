@@ -1394,8 +1394,8 @@ const _sp=spawn;spawn=function(id,ann){const n=_sp.apply(this,arguments);if(!n||
 const _ay12=advanceYear;advanceYear=function(){const r=_ay12.apply(this,arguments);if(!G)return r;const y=G.year;
  const rate=y<-1000?0.25:y<0?0.4:y<1000?0.6:y<1500?0.8:y<1800?1.2:2;
  Object.values(G.nations).forEach(n=>{if(!n.alive||n.human)return;const ps=provsOf(n.civ);if(!ps.length)return;const OP=window.euOwnPol?(p=>euOwnPol(n,p)):(p=>false);const cap=conqCap(n).c;const outN=ps.filter(p=>!OP(p)).length;const adm=Math.min(1,Math.pow((0.5+n.techs.length*0.05)/Math.max(1,outN),2));const c=capC(n);const R=supplyR(n).r;
-  let E=Math.floor(rate*K*G.step/25*(window.euExpF?euExpF(n,ps):1)+rng());if(window.euColonists)E=Math.min(E,euColonists(n));const fr=[];const seen=new Set(ps);ps.forEach(p=>PROV[p].nb.forEach(q=>{if(!seen.has(q)&&!G.owner[q]&&!(y>=1850&&PROV[q].country!==homeM(n)&&!/Imperio|Raj|Reino Unido|Británic|Francia|Rusia|URSS/.test(civ(n.civ).name))){seen.add(q);if(!c||dist(PROV[q].c,c)<=R)fr.push(q);}}));
-  fr.sort(()=>rng()-0.5);{const fo=fr.filter(p=>window.euOwnNow&&euOwnNow(n,p));let Eo=Math.ceil(Math.max(rate*K,fo.length*0.3)*G.step/25);while(Eo-->0&&fo.length){const p=fo.pop();if(window.euNative&&!euNative(n,p))continue;G.owner[p]=n.civ;G.cult=G.cult||{};if(!G.cult[p])G.cult[p]=n.civ;}for(let i=fr.length-1;i>=0;i--)if(G.owner[fr[i]])fr.splice(i,1);}while(E-->0&&fr.length&&provsOf(n.civ).length<cap){const p=fr.pop();if(!OP(p)){const d=c?dist(PROV[p].c,c)/R:0;if(rng()>(1-d*d)*adm*(window.euReach?euReach(n,p).f:1))continue;}if(window.euNative&&!euNative(n,p))continue;G.owner[p]=n.civ;if(window.WS){const nm=civ(n.civ).name;if(/Etiop|Kanem|Israel|Congo|India|timúr/.test(nm))WS['x12:'+nm]=(WS['x12:'+nm]||0)+1;}G.cult=G.cult||{};if(!G.cult[p])G.cult[p]=n.civ;}});
+  let E=Math.floor(rate*K*G.step/25*(window.euExpF?euExpF(n,ps):1)+rng());if(window.euColonists)E=Math.min(E,euColonists(n));const fr=[];const seen=new Set(ps);ps.forEach(p=>PROV[p].nb.forEach(q=>{if(!seen.has(q)&&!G.owner[q]&&!(y>=1850&&PROV[q].country!==homeM(n)&&!/Imperio|Raj|Reino Unido|Británic|Francia|Rusia|URSS/.test(civ(n.civ).name))){seen.add(q);if(!c||dist(PROV[q].c,c)<=R||(window.euFront&&euFront(n,q)))fr.push(q);}}));
+  fr.sort(()=>rng()-0.5);{let fo=fr.filter(p=>window.euOwnNow&&euOwnNow(n,p));let Eo=Math.ceil(Math.max(rate*K,fo.length*0.3)*G.step/25*(window.euFrontM?euFrontM(n):1));let wv=0,wk=0;while(Eo>0&&fo.length&&wv<(G.year>=1500?4:1)){const nx=[];while(Eo-->0&&fo.length){const p=fo.pop();if(window.euNative&&!euNative(n,p))continue;if(window.euCtl&&!euCtl(n,p))continue;wk++;G.owner[p]=n.civ;G.cult=G.cult||{};if(!G.cult[p])G.cult[p]=n.civ;PROV[p].nb.forEach(q=>{if(!seen.has(q)&&!G.owner[q]&&euOwnNow(n,q)){seen.add(q);nx.push(q);}});}fo=nx;wv++;}if(wk){n._wv={y:G.year,w:wv,k:wk};}for(let i=fr.length-1;i>=0;i--)if(G.owner[fr[i]])fr.splice(i,1);}while(E-->0&&fr.length&&provsOf(n.civ).length<cap){const p=fr.pop();if(!OP(p)){const d=c?dist(PROV[p].c,c)/R:0;if(rng()>(1-d*d)*adm*(window.euReach?euReach(n,p).f:1))continue;}if(window.euNative&&!euNative(n,p))continue;if(window.euCtl&&!euCtl(n,p))continue;G.owner[p]=n.civ;if(window.WS){const nm=civ(n.civ).name;if(/Etiop|Kanem|Israel|Congo|India|timúr/.test(nm))WS['x12:'+nm]=(WS['x12:'+nm]||0)+1;}G.cult=G.cult||{};if(!G.cult[p])G.cult[p]=n.civ;}});
  if(y>=1850){const byM={};Object.values(G.nations).forEach(n=>{if(n.alive&&!n.human){const M=homeM(n);if(M&&!byM[M])byM[M]=n.civ;}});
   PROV.forEach((p,i)=>{const o=G.owner[i],on=o&&N(o);if(y>=1945&&on&&!on.human&&byM[p.country]&&byM[p.country]!==o&&homeM(on)!==p.country&&rng()<0.25*G.step/25){G.owner[i]=byM[p.country];return;}if(!G.owner[i]&&byM[p.country]&&rng()<0.35*G.step/25)G.owner[i]=byM[p.country];});}
  return r;};
@@ -1627,7 +1627,7 @@ function trimTo(n,k){const ps=provsOf(n.civ);if(ps.length<=k)return;const c=capC
 const _sp18=spawn;spawn=function(id){const n=_sp18.apply(this,arguments);try{if(n&&n.alive&&!n.human)trimTo(n,histSize(n));}catch(e){}return n;};
 // sucesión: si el árbol da varias sucesoras, se reparten por cercanía; cada una nace con su tamaño histórico
 const _sc18=syncCivs;/*trim*/syncCivs=function(){const before={};Object.values(G.nations).forEach(n=>{if(n.alive)before[n.civ]=1;});
- const ob=G.owner.slice();const INH={};const r=_sc18.apply(this,arguments);try{const rr=rowAt(G.year);for(let p=0;p<G.owner.length;p++){const o=G.owner[p];if(!o||o===ob[p]||!ob[p])continue;if(window.euHeir&&euHeir(ob[p],o)&&N(ob[p])&&ownPol(N(ob[p]),p)){if(!ownPol(N(o),p)){const alt=Object.values(G.nations).find(e=>e.alive&&e.civ!==o&&!e.human&&e.cap>=0&&ownPol(e,p)&&euHeir(ob[p],e.civ));const alt2=alt||Object.values(G.nations).find(e=>e.alive&&e.civ!==o&&!e.human&&e.cap>=0&&ownPol(e,p)&&dist(PROV[e.cap].c,PROV[p].c)<15);if(alt2){G.owner[p]=alt2.civ;INH[alt2.civ]=(INH[alt2.civ]||0)+1;if(window.WS)WS["reasig"]=(WS["reasig"]||0)+1;continue;}}INH[o]=(INH[o]||0)+1;continue;}const t=N(o);if(!t||t.human||p===t.cap)continue;const c=t.cap>=0?t.cap:p;const tv=dec(rr,c),pv=dec(rr,p);
+ const ob=G.owner.slice();const INH={};const r=_sc18.apply(this,arguments);try{const rr=rowAt(G.year);for(let p=0;p<G.owner.length;p++){const o=G.owner[p];if(!o||o===ob[p]||!ob[p])continue;if(window.euDirect&&euDirect(ob[p],o)){INH[o]=(INH[o]||0)+1;G.dir=G.dir||{};G.dir[o]={from:ob[p],n:(G.dir[o]&&G.dir[o].y===G.year?G.dir[o].n:0)+1,y:G.year};continue;}if(window.euHeir&&euHeir(ob[p],o)&&N(ob[p])&&ownPol(N(ob[p]),p)){if(!ownPol(N(o),p)){const alt=Object.values(G.nations).find(e=>e.alive&&e.civ!==o&&!e.human&&e.cap>=0&&ownPol(e,p)&&euHeir(ob[p],e.civ));const alt2=alt||Object.values(G.nations).find(e=>e.alive&&e.civ!==o&&!e.human&&e.cap>=0&&ownPol(e,p)&&dist(PROV[e.cap].c,PROV[p].c)<15);if(alt2){G.owner[p]=alt2.civ;INH[alt2.civ]=(INH[alt2.civ]||0)+1;if(window.WS)WS["reasig"]=(WS["reasig"]||0)+1;continue;}}INH[o]=(INH[o]||0)+1;continue;}const t=N(o);if(!t||t.human||p===t.cap)continue;const c=t.cap>=0?t.cap:p;const tv=dec(rr,c),pv=dec(rr,p);
   const keep=ownPol(t,p)||isSt(tv)?(pv===tv||ownPol(t,p)):dist(PROV[p].c,PROV[c].c)<=8;if(!keep)G.owner[p]=null;}}catch(e){}
  Object.values(G.nations).forEach(t=>{if(t.alive&&!before[t.civ]&&!t.human){try{trimTo(t,Math.max(histSize(t),INH[t.civ]||0));if(INH[t.civ]){G.inh=G.inh||{};G.inh[t.civ]={n:INH[t.civ],y:G.year};}}catch(e){}}});return r;};
 const _fx18=activeFx;activeFx=function(n){const L=_fx18(n);L.push(["Pueblos sin estado",`colonizar su tierra exige vencerlos o negociar (fuerza ${natStr(provsOf(n.civ)[0]||0,n)}+ según interior/región); fracaso = −ejército`,0,"hasta 1900"]);return L;};
@@ -1651,7 +1651,7 @@ let SN=0;
 const AQ={};function successor(grp){const y=G.year;const r=rowAt(y);const pv=dec(r,grp[0]);if(isSt(pv)){const m=CIVS.filter(c=>c.start<=y&&c.end>y&&!G.spawned.includes(c.id)&&!G.prevent.includes(c.id)&&ANCH[c.id]).find(c=>{const a=ANCH[c.id];if(!(c.id in AQ))AQ[c.id]=nearestProv(a[0],a[1]);const q=AQ[c.id];return q>=0&&dec(r,q)===pv;});if(m)return m;}let best=null,bd=1e9;CIVS.forEach(c=>{if(c.start>y||c.end<=y||G.spawned.includes(c.id)||G.prevent.includes(c.id))return;const a=ANCH[c.id];if(!a)return;grp.forEach(p=>{const d=dist(PROV[p].c,a);if(d<bd){bd=d;best=c;}});});return bd<=6?best:null;}
 function uprisings(){const f=G.step/25,r=rowAt(G.year);Object.values(G.nations).forEach(n=>{if(!n.alive)return;const ps=provsOf(n.civ);if(ps.length<2)return;const G2={};
  ps.forEach(p=>{if(p===n.cap)return;const s=sep(n,p);if(!s)return;const v=dec(r,p);const key=isSt(v)?"s"+v:"f"+Math.round(PROV[p].c[0]/8)+":"+Math.round(PROV[p].c[1]/8);(G2[key]=G2[key]||[]).push([p,s]);});
- Object.values(G2).forEach(g=>{if(!n.alive)return;const avg=g.reduce((a,x)=>a+x[1],0)/g.length;const un=g.reduce((a,x)=>a+unrest(n,x[0]),0)/g.length;if(rng()>Math.min(0.6,un/100*SF.rate*f*(window.euSteppe&&euSteppe(n)&&euHist(n)&&ps.length>1.3*euHist(n)?8:(window.euOver?euOver(n,ps.length):1))))return;
+ Object.values(G2).forEach(g=>{if(!n.alive)return;const avg=g.reduce((a,x)=>a+x[1],0)/g.length;const un=g.reduce((a,x)=>a+unrest(n,x[0]),0)/g.length;if(rng()>Math.min(0.6,un/100*SF.rate*f*(window.euSteppe&&euSteppe(n)&&euHist(n)&&ps.length>1.3*euHist(n)?8:(window.euEv&&euEv(n,ps.length)?8:(window.euOver?euOver(n,ps.length):1)))))return;
   const grp=g.map(x=>x[0]);const reb=grp.length*2+un/10;const gar=power(n)*grp.length/ps.length*3*(0.5+n.stab/100);const win=rng()<reb/(reb+gar);
   if(window.WS){WS[win?'sepWin':'sepLoss']=(WS[win?'sepWin':'sepLoss']||0)+1;if(win){const kk='sv:'+civ(n.civ).name;WS[kk]=(WS[kk]||0)+grp.length;}}
   if(!win){n.army=Math.max(1,Math.round(n.army*0.95));if(n.human)addLog(`🔥 Rebeldes derrotados en ${locName(grp[0])} (separatismo ${Math.round(avg)}).`);return;}
@@ -1699,13 +1699,132 @@ window.euHeir=(a,b)=>{try{const ca=civ(a),cb=civ(b);if(!ca||!cb)return false;if(
  window.euFrontM=n=>{const a=act(n);return a?1+(a.t.M-1)*a.r.d/(1-FT.min):1;};
  window.euFront=(n,q)=>{const a=act(n);return !!(a&&a.t.reach&&window.euOwnNow&&euOwnNow(n,q));};
  const _si=settleInfo;settleInfo=function(n,p,col){const s=_si(n,p,col);const a=act(n);if(a&&euFront(n,p)){const m=euFrontM(n);s.risk=Math.max(0.02,s.risk/m);if(s.cost)for(const k in s.cost)s.cost[k]=Math.ceil(s.cost[k]/m);s.reach=(s.reach?s.reach+". ":"")+`${a.t.n}: coste y riesgo ÷${m.toFixed(2)}`;}return s;};
- const _af=activeFx;activeFx=function(n){const L=_af.apply(this,arguments);const a=act(n);if(a){const m=euFrontM(n);L.push([a.t.n,`Fortaleza histórica (${a.t.t}). Estás al ${a.r.pct}% de tu tamaño histórico (${provsOf(n.civ).length} de ${euHist(n)} provincias): colonizas las tierras libres de tu zona histórica ×${m.toFixed(2)} más rápido, sin límite de distancia de suministro, y tus asentamientos allí cuestan y arriesgan ÷${m.toFixed(2)}`,true,`de ${a.t.y[0]<0?(-a.t.y[0])+" a.C.":a.t.y[0]} a ${a.t.y[1]<0?(-a.t.y[1])+" a.C.":a.t.y[1]}, mientras estés por debajo del 80% de tu tamaño histórico`]);}return L;};
+ const _af=activeFx;activeFx=function(n){const L=_af.apply(this,arguments);const a=act(n);if(a){const m=euFrontM(n);L.push([a.t.n,`Fortaleza histórica (${a.t.t}). Estás al ${a.r.pct}% de tu tamaño histórico (${provsOf(n.civ).length} de ${euHist(n)} provincias): colonizas las tierras libres de tu zona histórica ×${m.toFixed(2)} más rápido (desde 1500 hasta 4 oleadas de colonos por turno, avanzando desde lo recién colonizado; antes, 1), sin límite de distancia de suministro, y tus asentamientos allí cuestan y arriesgan ÷${m.toFixed(2)}`,true,`de ${a.t.y[0]<0?(-a.t.y[0])+" a.C.":a.t.y[0]} a ${a.t.y[1]<0?(-a.t.y[1])+" a.C.":a.t.y[1]}, mientras estés por debajo del 80% de tu tamaño histórico`]);}return L;};
 })();
 
 // v6.7: sobreextensión (mismas reglas para todos): con más del OXT× de tu tamaño histórico, las revueltas separatistas son OXM× más probables.
-(function(){const OX={t:1.3,m:5};window.OX=OX;
+(function(){const OX={t:1.05,m:8};window.OX=OX;
  window.euOver=(n,k)=>{const h=window.euHist?euHist(n):0;return h>0&&k>OX.t*h?OX.m:1;};
  const _af=activeFx;activeFx=function(n){const L=_af.apply(this,arguments);try{const h=euHist(n),k=provsOf(n.civ).length;if(h>0&&k>OX.t*h)L.push(["Sobreextensión",`Tienes ${k} provincias, más de ${OX.t}× tu tamaño histórico (${h}) en el año ${G.year}: revueltas separatistas ×${OX.m} más probables hasta que bajes de ${Math.floor(OX.t*h)}.`]);}catch(e){}return L;};
+})();
+
+// v6.8: misiones históricas (eventos con ventana de años). Valen igual para la IA y para el jugador: dan objetivos y ventajas, nunca quitan tierras.
+(function(){const MS=[
+ {civs:["roma_rep","roma_imp"],y:[-264,-30],n:"Conquista del Mediterráneo",t:"guerras púnicas, macedónicas y conquista de las Galias"},
+ {civs:["castilla","aragon","portugal"],y:[1212,1492],n:"Reconquista",t:"de Las Navas de Tolosa a la toma de Granada"},
+ {civs:["portugal"],y:[1500,1822],M:5,n:"Colonización de Brasil y factorías",t:"de Cabral (1500) a la independencia de Brasil (1822)"},
+ {civs:["espana_imp","castilla"],y:[1492,1810],n:"Conquista y colonización de América",t:"virreinatos de Nueva España y Perú"},
+ {civs:["moscovia","rusia_zar"],y:[1480,1800],n:"Expansión rusa al este",t:"fin del yugo tártaro (1480), Kazán (1552), Siberia hasta el Pacífico"},
+ {civs:["francia_med"],y:[1450,1789],M:5,n:"Centralización francesa",t:"la corona absorbe Borgoña (1477), Bretaña (1532) y los grandes feudos"},
+ {civs:["roma_imp"],y:[-27,117],n:"Pax romana y conquistas de Trajano",t:"de Augusto a Trajano: Britania (43), Dacia (106) y Mesopotamia (116)"},
+ {civs:["kipchak"],y:[950,1220],n:"Expansión por la Desht-i-Kipchak",t:"kimeks y kipchaks se extienden del Irtish al Volga y, tras los pechenegos, al mar Negro"},
+ {civs:["rouran"],y:[402,552],n:"Kaganato rouran",t:"Shelun toma el título de kagan (402) y domina la estepa mongola hasta la revuelta de los göktürks (552)"},
+ {civs:["han"],y:[-206,220],n:"Expansión Han",t:"corredor de Hexi, conquista de Nanyue (111 a.C.) y Gojoseon (108 a.C.)"},
+ {civs:["sasanidas"],y:[224,651],n:"Restauración del Imperio persa",t:"Ardacher I y Sapor I reconstruyen el imperio de los aqueménidas"},
+ {civs:["francia_rev"],y:[1792,1815],n:"Guerras revolucionarias y napoleónicas",t:"la Francia revolucionaria se anexa Bélgica, Renania y el norte de Italia"},
+ {civs:["brasil_col"],y:[1530,1822],M:5,n:"Bandeirantes y colonización de Brasil",t:"capitanías, bandeirantes y Tratado de Madrid (1750)"},
+ {civs:["nueva_espana","virreinato_peru","rio_plata","nueva_granada"],y:[1535,1810],n:"Colonización virreinal",t:"misiones, presidios y encomiendas extienden los virreinatos"},
+ {civs:["trece_colonias","eeuu"],y:[1700,1890],M:5,n:"Expansión hacia el Oeste",t:"de los Apalaches al Pacífico: Luisiana (1803), Texas (1845), Oregón (1846)"},
+ {civs:["nueva_francia","gran_bretana","reino_unido","canada"],y:[1600,1914],n:"Comercio de pieles y colonización de Norteamérica",t:"Compañía de la Bahía de Hudson (Tierra de Rupert) y Nueva Francia"},
+ {civs:["reino_unido","francia","portugal","alemania_imp","italia","paises_bajos"],y:[1880,1914],n:"Reparto de África y Asia",t:"Conferencia de Berlín (1884-85) y carrera colonial"},
+ {civs:["aq_qoyunlu"],y:[1467,1501],n:"Victoria de Uzun Hasan",t:"Uzun Hasan derrota a Jahan Shah (1467) y al timúrida Abu Said (1469) y toma Irán occidental"},
+ {civs:["otomano"],y:[1299,1566],n:"Expansión otomana",t:"de Bursa a Constantinopla (1453), Egipto (1517) y Hungría (1526)"},
+ {civs:["califato_rash","omeyas"],y:[632,750],n:"Conquistas islámicas",t:"de Arabia a la península ibérica y el Indo"},
+ {civs:["mongoles"],y:[1206,1260],n:"Invasiones mongolas",t:"Gengis Kan y sus sucesores conquistan de China a Europa oriental"}];
+ const MM={col:3,pw:1.3,q:0.5};window.MM=MM;
+ const mis=n=>{if(!n||!n.alive)return null;const m=MS.find(m=>m.civs.includes(n.civ)&&G.year>=m.y[0]&&G.year<=m.y[1]);if(!m)return null;const r=window.euRQ?euRQ(n,null):null;return r&&r.d>0?{m,r}:null;};
+ window.euMis=mis;const _fm=window.euFrontM||(()=>1);window.euFrontM=n=>{const a=mis(n);return a?Math.max(_fm(n),a.m.M||MM.col):_fm(n);};
+ const _at=aiTurn;aiTurn=function(n){const a=mis(n);if(a&&!n.human&&!Object.keys(n.war).length){const my=power(n);const c=neighborsOf(n).filter(e=>!e.human&&!n.allies.includes(e.civ)&&power(e)<my*MM.pw).map(e=>({e,k:claims(n,e).length})).filter(x=>x.k).sort((x,y)=>y.k-x.k);if(c.length&&rng()<MM.q*G.step/25){G._rqd=1;declareWar(n,c[0].e,true);G._rqd=0;}}return _at.apply(this,arguments);};
+ const _af=activeFx;activeFx=function(n){const L=_af.apply(this,arguments);try{const a=mis(n);if(a){const yy=v=>v<0?(-v)+' a.C.':v;L.push(["Misión histórica: "+a.m.n,`${a.m.t} (${yy(a.m.y[0])}–${yy(a.m.y[1])}). Tienes ${provsOf(n.civ).length} de ${euHist(n)} provincias históricas (${a.r.pct}%): colonizas tu zona histórica ×${a.m.M||MM.col} y la IA declara guerra a vecinos con tus reclamaciones si su poder es menor que ${MM.pw}× el suyo (${Math.round(MM.q*100)}% por turno de 25 años). Puedes ignorarla y cambiar la historia.`]);}}catch(e){}return L;};
+})();
+
+// v6.8: crisis históricas de imperios (eventos con ventana de años; igual para jugador e IA): si en esa época superas tu tamaño histórico, las revueltas separatistas son ×8 más probables.
+(function(){const EV=[
+ {civs:["timuridas"],y:[1405,1507],n:"Guerras de sucesión timúridas",t:"tras la muerte de Timur (1405) sus hijos y nietos se reparten el imperio"},
+ {civs:["horda_oro"],y:[1420,1502],n:"Fragmentación de la Horda de Oro",t:"se separan los kanatos de Siberia, Kazán (1438), Crimea (1441) y Astracán (1466)"},
+ {civs:["delhi"],y:[1398,1526],n:"Declive del Sultanato de Delhi",t:"saqueo de Timur (1398); Bengala, Guyarat, Malwa y el Decán se independizan"},
+ {civs:["tibet"],y:[842,1247],n:"Era de la fragmentación tibetana",t:"tras el asesinato de Langdarma (842) el imperio se divide en reinos y señoríos"},
+ {civs:["xiongnu"],y:[-57,93],n:"Guerras civiles xiongnu",t:"cinco chanyus rivales (57 a.C.) y división en Xiongnu del Norte y del Sur (48 d.C.)"},
+ {civs:["pechenegos"],y:[1036,1091],n:"Derrota y dispersión de los pechenegos",t:"derrota ante Kiev (1036), presión cumana y aniquilación en Levounion (1091)"},
+ {civs:["axum","etiopia"],y:[940,1137],n:"Caída de Aksum",t:"la reina Gudit saquea Aksum (c. 960) y el reino se fragmenta hasta los Zagwe (1137)"},
+ {civs:["rajputs"],y:[1526,1818],n:"Sometimiento rajput",t:"Babur vence en Khanwa (1527), Akbar toma Chittor (1568) y los rajputs pasan a vasallos mogoles y luego maratas"},
+ {civs:["gupta"],y:[455,550],n:"Invasiones de los hunos heftalitas",t:"Skandagupta los frena (455) pero Toramana y Mihirakula desintegran el imperio"},
+ {civs:["xiongnu"],y:[-119,-58],n:"Campañas Han contra los xiongnu",t:"Wei Qing y Huo Qubing (119 a.C.) expulsan a los xiongnu al norte del Gobi"},
+ {civs:["xiongnu","pechenegos","timuridas","chagatai","gokturks"],y:[-300,1800],n:"Fragilidad de la confederación nómada",t:"los imperios de la estepa dependían de la lealtad personal de los clanes al kan y se dividían al crecer más allá de su núcleo"},
+ {civs:["mali"],y:[1433,1670],n:"Declive de Malí",t:"los tuaregs toman Tombuctú (1433) y Songhai conquista el Níger medio"}];
+ const ev=n=>EV.find(e=>e.civs.includes(n.civ)&&G.year>=e.y[0]&&G.year<=e.y[1]);
+ window.euEv=(n,k)=>{const e=ev(n);const h=euHist(n);return !!(e&&h>0&&k>h);};
+ const _af=activeFx;activeFx=function(n){const L=_af.apply(this,arguments);try{const e=ev(n);if(e){const h=euHist(n),k=provsOf(n.civ).length;L.push(["Crisis histórica: "+e.n,`${e.t} (${e.y[0]}–${e.y[1]}). Tienes ${k} provincias y tu tamaño histórico en ${G.year} es ${h}: `+(k>h?`revueltas separatistas ×8 más probables mientras superes ${h}.`:`sin efecto mientras no superes ${h}.`)]);}}catch(x){}return L;};
+})();
+
+// v6.8: continuidad directa del Estado (mismo Estado renombrado o reorganizado): el heredero conserva TODAS las provincias. Divisiones y sucesores no directos siguen la regla normal.
+(function(){const DP=[["moscovia","rusia_zar"],["rusia_zar","urss"],["roma_rep","roma_imp"],["castilla","espana_imp"],["francos","francia_med"],["francia_med","francia_rev"]];
+ window.euDirect=(a,b)=>{try{if(DP.some(x=>x[0]===a&&x[1]===b))return true;const t=civTo(a)||[];return t.length===1&&(t[0]===b||resolveSucc(t[0])===b);}catch(e){return false;}};
+ const _af=activeFx;activeFx=function(n){const L=_af.apply(this,arguments);try{const d=G.dir&&G.dir[n.civ];if(d){const yy=d.y<0?(-d.y)+' a.C.':d.y;L.push(["Continuidad del Estado",`En ${yy} ${civ(d.from).name} se transformó en tu Estado: conservaste sus ${d.n} provincias (solo se pierden por guerra o revuelta).`]);}}catch(e){}return L;};
+})();
+
+// v6.8: Estados históricos que faltaban (datos: historical-basemaps). Aparecen en su año y capital reales, con las mismas reglas que el resto.
+(function(){const NEW=`A|xiongnu|Confederación Xiongnu|-209|93|Asia|escitas|hunos|Modu Chanyu|Unificación de las estepas (209 a.C.);Guerras con la China Han
+A|himyar|Reino de Himyar|-110|525|Medio Oriente|||Dhu Nuwas|Dominio del sur de Arabia
+M|rouran|Kanato Rouran|330|555|Asia|xiongnu|gokturks|Shelun|Dominio de la estepa mongola
+M|gokturks|Kanato Göktürk|552|744|Asia|rouran||Bumin Qaghan;Istämi|Inscripciones del Orjón
+M|tibet|Imperio tibetano y reinos del Tíbet|618|1720|Asia|||Songtsen Gampo;Trisong Detsen|Toma de Chang'an (763)
+M|jazaros|Kanato jázaro|650|969|Europa|gokturks||Bulan|Conversión al judaísmo de la élite;Guerras árabe-jázaras
+M|bulgaria_volga|Bulgaria del Volga|700|1236|Europa||horda_oro|Almysh|Conversión al islam (922)
+M|rajputs|Reinos rajputs|750|1818|Asia|gupta||Prithviraj Chauhan|Batallas de Tarain (1191-1192)
+M|pechenegos|Pechenegos|860|1091|Europa|jazaros|kipchak|Kurya|Batalla de Levounion (1091)
+M|kipchak|Confederación Kimek-Kipchak (cumanos)|880|1241|Asia|pechenegos|horda_oro|Köten|Batalla del Kalka (1223)
+M|chalukya|Imperio chalukya occidental|973|1189|Asia|||Tailapa II;Vikramaditya VI|Guerras con los Chola
+M|chagatai|Kanato de Chagatai y Mogolistán|1225|1680|Asia|mongoles|timuridas|Chagatai Kan;Tughlugh Timur|Mogolistán
+M|oirat|Confederación oirate|1399|1634|Asia|mongoles||Esen Taishi|Crisis de Tumu (1449)
+M|kazan|Kanato de Kazán|1438|1552|Europa|horda_oro,bulgaria_volga|rusia_zar|Ulugh Muhammad|Conquista rusa (1552)
+M|crimea|Kanato de Crimea|1441|1783|Europa|horda_oro||Hacı I Giray;Devlet I Giray|Quema de Moscú (1571);Anexión rusa (1783)
+M|astracan|Kanato de Astracán|1466|1556|Europa|horda_oro|rusia_zar|Mahmud|Conquista rusa (1556)
+M|kazajo|Kanato kazajo|1465|1847|Asia|horda_oro||Kerei;Janibek;Kasym Kan|Fundación (1465)
+M|sibir|Kanato de Siberia|1468|1598|Asia|horda_oro|rusia_zar|Kuchum|Conquista de Yermak (1582)
+M|mutapa|Reino de Mutapa|1430|1760|África|||Nyatsimba Mutota|Comercio de oro con los portugueses
+M|bujara|Kanato de Bujará|1500|1920|Asia|timuridas||Muhammad Shaybani|Conquista de Samarcanda (1500)
+D|afganistan|Afganistán|1747|2026|Asia|safavi,mogol||Ahmad Sah Durrani|Fundación del Imperio durrani (1747)
+M|aq_qoyunlu|Confederación Aq Qoyunlu (Ovejas Blancas)|1378|1503|Medio Oriente||safavi|Uzun Hasan|Batalla de Otlukbeli (1473)
+M|bengala|Sultanato de Bengala|1352|1576|Asia|delhi|mogol|Shamsuddin Ilyas Shah;Alauddin Husain Shah|Independencia de Delhi (1352)
+M|bahmani|Sultanato bahmaní y sultanatos del Decán|1347|1687|Asia|delhi|mogol|Alauddin Bahman Shah|Batalla de Talikota (1565)
+M|ayutthaya|Reino de Ayutthaya|1351|1767|Asia|||Ramathibodi I;Naresuan|Saqueo birmano (1767)
+M|hafsidas|Califato hafsí|1229|1574|África|||Abu Zakariya|Cruzada de Túnez (1270)
+M|zayyanidas|Reino zayyaní de Tremecén|1235|1556|África|||Yaghmurasen|Toma otomana (1556)
+M|hausa|Estados hausa|1350|1808|África|||Muhammad Rumfa|Yihad de Usman dan Fodio (1804)
+M|malaca|Sultanato de Malaca|1400|1511|Asia|||Parameswara|Conquista portuguesa (1511)
+C|mongolia|Mongolia|1911|2026|Asia|qing||Bogd Kan;Damdin Sükhbaatar|Independencia (1911)
+C|sudan|Sudán|1956|2026|África|egipto_mod||Ismail al-Azhari|Independencia (1956)
+C|chad|Chad|1960|2026|África|||François Tombalbaye|Independencia (1960)
+C|niger|Níger|1960|2026|África|||Hamani Diori|Independencia (1960)
+C|mali_rep|Malí|1960|2026|África|||Modibo Keïta|Independencia (1960)
+C|mauritania|Mauritania|1960|2026|África|||Moktar Ould Daddah|Independencia (1960)
+C|madagascar|Madagascar|1960|2026|África|merina||Philibert Tsiranana|Independencia (1960)
+C|zambia|Zambia|1964|2026|África|||Kenneth Kaunda|Independencia (1964)
+C|angola|Angola|1975|2026|África|||Agostinho Neto|Independencia (1975)
+C|mozambique|Mozambique|1975|2026|África|||Samora Machel|Independencia (1975)
+C|namibia|Namibia|1990|2026|África|||Sam Nujoma|Independencia (1990)
+C|kazajistan|Kazajistán|1991|2026|Asia|urss,kazajo||Nursultán Nazarbáyev|Independencia (1991)
+C|uzbekistan|Uzbekistán|1991|2026|Asia|urss,bujara||Islam Karímov|Independencia (1991)`;
+ const A={xiongnu:[103,47],himyar:[44.4,15.4],rouran:[104,45],gokturks:[102,47.5],tibet:[91.1,29.6],jazaros:[47,46.5],bulgaria_volga:[49.1,55],rajputs:[74.6,26.5],pechenegos:[35,47],kipchak:[73,49.9],chalukya:[76.6,15.9],chagatai:[81,44],oirat:[92,47],kazan:[49.1,55.8],crimea:[33.9,44.9],astracan:[48,46.3],kazajo:[68,43.3],sibir:[68.3,58.2],mutapa:[31,-17],bujara:[64.4,39.8],afganistan:[69.2,34.5],aq_qoyunlu:[46.3,38.1],bengala:[88.1,24.9],bahmani:[77.5,17.9],ayutthaya:[100.6,14.4],hafsidas:[10.2,36.8],zayyanidas:[-1.3,34.9],hausa:[8.5,12],malaca:[102.2,2.2],mongolia:[106.9,47.9],sudan:[32.5,15.6],chad:[15,12.1],niger:[2.1,13.5],mali_rep:[-8,12.6],mauritania:[-15.9,18.1],madagascar:[47.5,-18.9],zambia:[28.3,-15.4],angola:[13.2,-8.8],mozambique:[32.6,-25.9],namibia:[17.1,-22.6],kazajistan:[71.4,51.2],uzbekistan:[69.3,41.3]};
+ NEW.split("\n").forEach(l=>{const p=l.split("|");if(BY[p[1]])return;const c={era:p[0],id:p[1],name:p[2],start:+p[3],end:+p[4],region:p[5],from:p[6]?p[6].split(","):[],to:p[7]?p[7].split(",").filter(x=>x):[],people:(p[8]||"").split(";").filter(x=>x),events:(p[9]||"").split(";").filter(x=>x)};CIVS.push(c);BY[c.id]=c;ANCH[c.id]=A[c.id];
+  c.from.forEach(f=>{if(BY[f]&&!BY[f].to.includes(c.id))BY[f].to.push(c.id);});});
+})();
+
+// v6.8: oleadas de colonos y guerra civil en crisis (visibles con sus números)
+(function(){const _af=activeFx;activeFx=function(n){const L=_af.apply(this,arguments);try{const v=n._wv;if(v&&G.year-v.y<=G.step){const yy=v.y<0?(-v.y)+' a.C.':v.y;L.push(["Oleadas de colonos",`En ${yy} tus colonos ocuparon ${v.k} provincias libres de tu territorio histórico de esa época en ${v.w} oleada${v.w>1?'s':''} (desde 1500, máx. 4 por turno, cada una avanza desde lo recién colonizado; antes, 1). Igual para jugador e IA.`]);}
+ if(window.euEv&&euEv(n,provsOf(n.civ).length))L.push(["Guerra civil",`Crisis histórica activa y superas tu tamaño histórico (${provsOf(n.civ).length} de ${euHist(n)} provincias): declarar una guerra ofensiva cuesta −20 estabilidad, +30 agotamiento bélico y −15% del ejército (desmoralización y deserciones). Igual para jugador e IA.`]);}catch(e){}return L;};
+ const _dw=declareWar;declareWar=function(a,b,silent){try{if(a&&b&&!a.war[b.civ]&&window.euEv&&euEv(a,provsOf(a.civ).length)){if(!a.human&&(a.stab<40||(a.wex||0)>=40))return;const r=_dw.apply(this,arguments);if(a.war[b.civ]){a.stab=Math.max(0,a.stab-20);a.wex=Math.min(100,(a.wex||0)+30);a.army=Math.round(a.army*0.85);if(a.human&&window.toast)toast(`Guerra civil: −20 estabilidad, +30 agotamiento bélico, −15% ejército.`);}return r;}}catch(e){}return _dw.apply(this,arguments);};
+})();
+
+// v6.8: Aksum no tiene heredero directo: tras el saqueo de Gudit (c. 960) el reino se fragmenta; la Etiopía salomónica nace en 1270
+(function(){try{const a=CIVS.find(c=>c.id==='axum');if(a)a.to=Array.isArray(a.to)?[]:'';}catch(e){}})();
+
+// v6.8: alcance del control preindustrial: antes de 1200 un Estado sedentario solo coloniza tierra libre a menos de 6° (antes de 1000) u 8° (1000–1199) de su capital; los nómadas a caballo no tienen este límite. Igual para todos.
+(function(){const R=()=>G.year<1000?6:G.year<1200?8:0;
+ window.euCtl=(n,p)=>{try{const r=R();if(!r||(window.euSteppe&&euSteppe(n)))return true;const c=capC(n);return !c||dist(PROV[p].c,c)<=r;}catch(e){return true;}};
+ const _si=settleInfo;settleInfo=function(n,p,col){const s=_si(n,p,col);try{if(!euCtl(n,p)){s.risk=0.95;s.reach=(s.reach?s.reach+". ":"")+`Fuera del alcance del control preindustrial (más de ${R()}° de tu capital antes de ${G.year<1000?1000:1200}): riesgo 95%`;}}catch(e){}return s;};
+ const _af=activeFx;activeFx=function(n){const L=_af.apply(this,arguments);try{const r=R();if(r&&!(window.euSteppe&&euSteppe(n)))L.push(["Alcance del control preindustrial",`Antes de ${G.year<1000?1000:1200} solo colonizas tierras libres a menos de ${r}° de tu capital (mensajeros y guarniciones a pie o a caballo). Los pueblos nómadas de la estepa no tienen este límite. Igual para jugador e IA.`]);}catch(e){}return L;};
 })();
 
 // ===== v6.6: mapa sobrio estilo EU4 =====
@@ -1724,4 +1843,4 @@ const UMIN=35;
 unrestBadges=function(){const g=$("#plabels");if(!g||!G)return;const n=me();g.querySelectorAll(".ubdg").forEach(e=>e.remove());if(Z.z<3)return;const r=$("#map").getBoundingClientRect();const k=360/(r.width*Z.z||1);let h="";
  provsOf(n.civ).forEach(p=>{if(p===n.cap)return;const u=unrest(n,p);if(u<UMIN)return;const[lo,la]=PROV[p].c;const x=lo+180+k*8,y=90-la-k*8;const col=u<50?"#c9a64a":u<65?"#c07a3a":"#a94438";
   h+=`<g class=ubdg><title>Descontento de esta provincia: ${u}% (riesgo de revuelta). ${unrestTip(n,p)}</title><circle cx="${x}" cy="${y}" r="${k*4.5}" fill="${col}" fill-opacity=".85" stroke="#1a1308" stroke-opacity=".6" stroke-width="${k*.5}"/><text x="${x}" y="${y+k*1.8}" font-size="${k*5}" text-anchor="middle" fill="#fff">${u}</text></g>`;});g.insertAdjacentHTML("beforeend",h);};
-</script><div id=ver>v6.7</div></body></html>
+</script><div id=ver>v6.8</div></body></html>
