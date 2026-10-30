@@ -1953,7 +1953,7 @@ function settle(){const h=H(),r=h.rowAt(G.year);let k=0;const got={};
 // --- 2026: los estados del mapa de 2026 que faltan se crean ---
 function final2026(){const h=H(),r=h.rowAt(2026);const L={};for(let p=0;p<PROV.length;p++){const v=h.dec(r,p);if(!h.isSt(v))continue;(L[v]=L[v]||[]).push(p);}let made=0,mp=0;const nm=[];
  for(const v in L){const ps=L[v];const c={};ps.forEach(p=>{const o=G.owner[p];if(o&&aliveN(o))c[o]=(c[o]||0)+1;});const bk=Math.max(0,...Object.values(c));if(bk>=0.5*ps.length)continue;
-  const sc=successor(ps);let id;if(sc&&!aliveN(sc.id)){id=sc.id;}else{id='mod_'+v+'_'+(G.turn);G.extra[id]={id,name:'Estado de '+locName(ps[0]),era:'C',start:2026,end:2100,region:civ(G.owner[ps[0]]||'')?civ(G.owner[ps[0]]).region:'',from:[],to:[],people:[],events:[]};ANCH[id]=PROV[ps[0]].c;}
+  const sc=window.__SUCC(ps);let id;if(sc&&!aliveN(sc.id)){id=sc.id;}else{id='mod_'+v+'_'+(G.turn);G.extra[id]={id,name:'Estado de '+locName(ps[0]),era:'C',start:2026,end:2100,region:civ(G.owner[ps[0]]||'')?civ(G.owner[ps[0]]).region:'',from:[],to:[],people:[],events:[]};ANCH[id]=PROV[ps[0]].c;}
   const t=ensure(id,ps[0]);if(!t)continue;t.techs=TECH.filter(q=>q.year<=2026).map(q=>q.id);ps.forEach(p=>G.owner[p]=id);t.cap=ps[0];made++;mp+=ps.length;nm.push(short(id)+' ('+ps.length+')');}
  if(made)flog(`2026 — Estados del mapa de 2026 que faltaban: se crean ${made} (${mp} provincias): ${nm.slice(0,8).join(', ')}${nm.length>8?'…':''}.`);
  consolidate(2026,0.3);settle();checkDead();}
@@ -2039,6 +2039,7 @@ const _ay=advanceYear;advanceYear=function(){const y0=G.year;const r=_ay.apply(t
 })();
 
 // ===== v6.19: independencias históricas con causas reales =====
+// v6.20: ya no hay fechas mágicas. Cada movimiento acumula TENSIÓN (0-100) por causas del juego; la época histórica solo la hace más probable.
 // En la fecha real, las tierras de un país actual que estén en manos de otro estado pueden independizarse por su causa histórica.
 // Mismas reglas para la IA y el jugador: la probabilidad depende de la estabilidad del dueño (más estable = más difícil separarse).
 (function(){
@@ -2079,8 +2080,16 @@ const IND=window.INDEP=[
  {y:1971,n:['Bangladés'],why:'Guerra de Liberación de Bangladés contra Pakistán tras el genocidio de 1971 y la intervención india'},
  {y:1991,n:['Croacia','Eslovenia'],why:'disolución de Yugoslavia: crisis económica, nacionalismos tras la muerte de Tito y fin del comunismo',each:1},
  {y:2008,n:['Kosovo'],why:'guerra de Kosovo (1998-1999), administración de la ONU y declaración de independencia de 2008'},
+ {y:1830,n:['Bélgica'],why:'Revolución belga: agravios católicos y liberales contra el rey holandés Guillermo I'},
+ {y:1948,n:['Corea del Sur'],why:'división de Corea tras la derrota japonesa: zona estadounidense y elecciones de 1948'},
+ {y:1971,n:['Emiratos Árabes Unidos'],why:'retirada británica «al este de Suez» y federación de los emiratos de la Costa de la Tregua'},
+ {y:1991,n:['Macedonia del Norte'],why:'disolución de Yugoslavia y referéndum de 1991'},
+ {y:1898,n:['Puerto Rico'],why:'guerra hispano-estadounidense: España pierde la isla (Tratado de París)'},
+ {y:1948,n:['Islas Feroe'],why:'movimiento autonomista feroés y Ley de Autogobierno de 1948'},
+ {y:1983,n:['República Turca del Norte de Chipre'],why:'golpe griego de 1974, invasión turca y proclamación de 1983'},
+ {y:1833,n:['Islas Malvinas','Islas Georgias del Sur y Sandwich del Sur'],why:'ocupación británica de 1833 y guerra de 1982 que la confirma',each:1},
  {y:2011,n:['Sudán del Sur'],why:'segunda guerra civil sudanesa, Acuerdo de Paz de 2005 y referéndum (98,8 % a favor)'}];
-const IDS={'Kazajistán':'kazajistan','Uzbekistán':'uzbekistan','Ucrania':'ucrania','Corea del Norte':'corea_norte','Haití':'haiti','Portugal':'portugal','Costa Rica':'costa_rica'};
+const IDS={'Kazajistán':'kazajistan','Uzbekistán':'uzbekistan','Ucrania':'ucrania','Corea del Norte':'corea_norte','Corea del Sur':'corea_sur','Haití':'haiti','Portugal':'portugal','Costa Rica':'costa_rica'};
 const BY={};PROV.forEach((p,i)=>{(BY[p.country]=BY[p.country]||[]).push(i);});
 function fy(y){return y<0?(-y)+' a.C.':String(y);}
 function R(){return typeof rng==='function'?rng():Math.random();}
@@ -2088,22 +2097,50 @@ function slug(s){return s.normalize('NFD').replace(/[^\w]/g,'').toLowerCase();}
 function target(nm,id){if(id&&civ(id))return id;if(IDS[nm])return IDS[nm];
  const a=Object.values(G.nations).find(n=>n.alive&&civ(n.civ)&&civ(n.civ).name===nm);if(a)return a.civ;
  const x='ind_'+slug(nm);if(!G.extra[x]){const ps=BY[nm];G.extra[x]={id:x,name:nm,era:'C',start:G.year,end:2026,region:'',from:[],to:[],people:[],events:[]};ANCH[x]=PROV[ps[0]].c;}return x;}
-function free(e,nm){const ps=(BY[nm]||[]);const id=target(nm,e.id);const lost={};let k=0,kept=0,un=0;const own={};
+// dueño principal de las tierras de un país actual (excluido el propio estado)
+function holder(nm,id){const c={};(BY[nm]||[]).forEach(p=>{const o=G.owner[p];if(o&&o!==id)c[o]=(c[o]||0)+1;});let b=null,k=0;for(const o in c)if(c[o]>k){k=c[o];b=o;}return [b,k];}
+// factores de presión, todos del estado del juego
+function factors(e,nm,o){const n=N(o);const ps=provsOf(o);const capC=n.cap>=0?PROV[n.cap].country:null;
+ const f=[];const d=G.year-e.y;
+ const era=d<-60?0.03:d<-30?0.25:d<=20?1:d<=80?0.6:0.3;f.push(['época',era,d<-30?'lejos de la época histórica':'época propicia']);
+ const own=ps.filter(p=>PROV[p].country===capC).length;const ext=1-own/Math.max(1,ps.length);
+ if(capC!==nm)f.push(['identidad propia',0.5,`${nm} es una tierra distinta del núcleo de ${short(o)}`]);
+ if(ext>0.3)f.push(['sobreextensión',0.4*ext,`${Math.round(ext*100)}% de sus provincias son de otros pueblos`]);
+ if((n.gold||0)<0)f.push(['estancamiento económico',0.3,`tesoro en ${Math.round(n.gold)}`]);
+ const wars=Object.keys(n.war||{}).length;if(wars)f.push(['guerras costosas',0.15*Math.min(3,wars),`${wars} guerra(s) abierta(s)`]);
+ const st=n.stab||0;f.push(['gobierno',(55-st)/100,`estabilidad ${Math.round(st)}`]);
+ if(n.reform)f.push(['reformas y apertura',0.25,'la apertura permite expresar el descontento']);
+ return f;}
+function free(e,nm,why){const ps=(BY[nm]||[]);const id=target(nm,e.id);let kept=0,un=0;const own={};
  ps.forEach(p=>{const o=G.owner[p];if(o===id)return;(own[o||'']=own[o||'']||[]).push(p);});
  const take=[];const info=[];
- Object.entries(own).forEach(([o,g])=>{const n=o?N(o):null;const st=n?(n.stab||0):0;const pr=n?Math.max(0.5,Math.min(1,0.9+(60-st)/100)):1;
+ Object.entries(own).forEach(([o,g])=>{const n=o?N(o):null;const st=n?(n.stab||0):0;const pr=n?Math.max(0.3,Math.min(1,0.8+(60-st)/100)):1;
   if(R()<pr){take.push(...g);if(o)info.push(`${short(o)} pierde ${g.length} (prob. ${Math.round(pr*100)}%, estabilidad ${Math.round(st)})`);else un+=g.length;}
   else{kept+=g.length;info.push(`${short(o)} conserva ${g.length} (prob. ${Math.round(pr*100)}%, estabilidad ${Math.round(st)})`);}});
- if(!take.length){if(kept)addLog(`🛡️ ${fy(e.y)} — ${nm} no logra independizarse (${e.why}): ${info.join('; ')}.`);return;}
+ if(!take.length){addLog(`🛡️ ${fy(G.year)} — ${nm}: ${why} fracasa. ${info.join('; ')}. La tensión baja a 40.`);return false;}
  let t=N(id);const army=take.reduce((a,p)=>{const o=G.owner[p];const n=o&&N(o);return a+(n?n.army/Math.max(1,provsOf(o).length):1);},0);
  if(!t){t=newNation(id,false);G.nations[id]=t;}
  if(!t.alive||!provsOf(id).length){t.alive=true;t.cap=take[0];t.army=Math.max(3,Math.round(army));const d=take.map(p=>G.owner[p]).find(o=>o&&N(o));if(d)t.techs=N(d).techs.slice();}
  else t.army+=Math.max(1,Math.round(army));
  if(!G.spawned.includes(id))G.spawned.push(id);
  take.forEach(p=>{const o=G.owner[p];if(o&&N(o))N(o).army=Math.max(1,Math.round(N(o).army*(1-1/Math.max(2,provsOf(o).length))));G.owner[p]=id;});
- addLog(`🗽 ${fy(e.y)} — Independencia de ${nm}: ${e.why}. Se separan ${take.length} provincias${un?` (${un} sin dueño)`:''}${info.length?': '+info.join('; '):''}. Ejército inicial ${t.army}.`);
- checkDead();}
-const _ay=advanceYear;advanceYear=function(){const y0=G.year;const r=_ay.apply(this,arguments);try{if(!G.ind)G.ind={};const y=G.year;
- IND.forEach((e,i)=>{if(G.ind[i]||!(e.y>y0&&e.y<=y))return;G.ind[i]=1;e.n.forEach(nm=>free(e,nm));});}catch(x){console.error(x);}return r;};
+ addLog(`🗽 ${fy(G.year)} — Independencia de ${nm} tras ${why}. Se separan ${take.length} provincias${un?` (${un} sin dueño)`:''}${info.length?': '+info.join('; '):''}. Ejército inicial ${t.army}.`);
+ checkDead();return true;}
+const TRIG=['un levantamiento armado','un referéndum','una guerra de independencia','un golpe fallido en la capital','una revolución'];
+function step(e,i,nm,k){const id=target(nm,e.id);const [o,cnt]=holder(nm,id);const key=i+':'+k;const T=G.ten;const ps=BY[nm]||[];
+ if(!o){if(G.year>=e.y-30&&ps.some(p=>!G.owner[p])&&!T[key+'u']){T[key+'u']=1;free(e,nm,'la organización de un gobierno propio en tierras sin dueño');}return;}
+ if(cnt<Math.max(1,ps.length*0.5)&&!(T[key]>0))return;
+ const n=N(o);if(!n||!n.alive)return;if(T[key+'o']!==o){T[key+'o']=o;T[key]=(T[key]||0)/2;}
+ const fs=factors(e,nm,o);const era=fs[0][1];const sum=fs.slice(1).reduce((a,x)=>a+x[1],0);
+ const d=Math.round(90*era*sum*(G.step/25));const old=T[key]||0;T[key]=Math.max(0,old+d);
+ const causes=fs.slice(1).filter(x=>x[1]>0).map(x=>`${x[0]} (${x[2]})`).join(', ');
+ if(old<50&&T[key]>=50)addLog(`📈 ${fy(G.year)} — Crece el movimiento por la independencia de ${nm} contra ${short(o)}: tensión ${Math.round(T[key])}/100 (+${d} este turno). Causas: ${causes}. Trasfondo histórico: ${e.why}.`);
+ // decisión del gobierno (igual para IA y jugador): reformar o reprimir cuando la tensión es alta
+ if(T[key]>=70&&!n.decT){n.decT=G.year;if((n.gold||0)>=0&&(n.stab||0)>=45){n.stab=Math.max(0,n.stab-4);n.army=Math.round(n.army*0.95);T[key]-=10;addLog(`👮 ${fy(G.year)} — ${short(o)} decide reprimir el movimiento en ${nm}: −10 de tensión, −4 de estabilidad, −5% de ejército.`);}
+  else{n.reform=true;n.stab=Math.min(100,n.stab+5);addLog(`📜 ${fy(G.year)} — ${short(o)} decide abrir reformas (tesoro ${Math.round(n.gold)}, estabilidad ${Math.round(n.stab)}): +5 de estabilidad, pero la apertura acelera los nacionalismos (+0,25 de presión).`);}}
+ if(n.decT&&G.year-n.decT>=50)n.decT=0;
+ if(T[key]>=100){const why=TRIG[(i+k)%TRIG.length]+` (tensión ${Math.round(T[key])}/100; causas: ${causes})`;if(free(e,nm,why))T[key]=0;else{T[key]=40;n.stab=Math.max(0,n.stab-5);}}}
+const _ay=advanceYear;advanceYear=function(){const r=_ay.apply(this,arguments);try{if(!G.ten)G.ten={};
+ IND.forEach((e,i)=>{if(G.year<e.y-90)return;e.n.forEach((nm,k)=>step(e,i,nm,k));});}catch(x){console.error(x);}return r;};
 })();
-</script><div id=ver>v6.19</div></body></html>
+</script><div id=ver>v6.20</div></body></html>
