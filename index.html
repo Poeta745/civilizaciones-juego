@@ -2037,4 +2037,73 @@ const _ay=advanceYear;advanceYear=function(){const y0=G.year;const r=_ay.apply(t
   if(G.cri[i]===1&&e.b>y0&&e.b<=y){G.cri[i]=2;if(!e.nosplit)splitEmpire(n,e);else addLog(`⏳ ${fy(e.b)} — Termina la crisis de ${short(n.civ)} (${e.why}).`);}
  });}catch(x){console.error(x);}return r;};
 })();
-</script><div id=ver>v6.18</div></body></html>
+
+// ===== v6.19: independencias históricas con causas reales =====
+// En la fecha real, las tierras de un país actual que estén en manos de otro estado pueden independizarse por su causa histórica.
+// Mismas reglas para la IA y el jugador: la probabilidad depende de la estabilidad del dueño (más estable = más difícil separarse).
+(function(){
+const IND=window.INDEP=[
+ {y:1804,n:['Haití'],id:'haiti',why:'Revolución haitiana: rebelión de los esclavos liderada por Toussaint Louverture y Dessalines y derrota de la expedición francesa (fiebre amarilla)'},
+ {y:1648,n:['Suiza'],why:'Paz de Westfalia: la Confederación Suiza queda reconocida como independiente del Sacro Imperio'},
+ {y:1648,n:['Países Bajos'],id:'paises_bajos',why:'Paz de Westfalia: fin de la Guerra de los Ochenta Años contra España'},
+ {y:1640,n:['Portugal'],id:'portugal',why:'Restauración portuguesa: rebelión contra la Unión Ibérica y aclamación de Juan IV'},
+ {y:1822,n:['Portugal'],id:'portugal',why:'independencia de Brasil: la corte regresa a Lisboa y Portugal se separa de su antigua colonia'},
+ {y:1838,n:['Nicaragua','Honduras','El Salvador','Costa Rica'],why:'disolución de la República Federal de Centroamérica por guerras civiles entre liberales y conservadores',each:1},
+ {y:1917,n:['Finlandia'],why:'Revolución rusa: el Parlamento finlandés declara la independencia (6 de diciembre de 1917)'},
+ {y:1918,n:['Austria'],why:'derrota en la Primera Guerra Mundial y colapso de Austria-Hungría: nace la República de Austria'},
+ {y:1918,n:['República Checa','Eslovaquia'],id:'checoslovaquia',why:'colapso de Austria-Hungría tras la Primera Guerra Mundial: nace Checoslovaquia'},
+ {y:1948,n:['Corea del Norte'],id:'corea_norte',why:'división de Corea tras la derrota japonesa (1945) en zonas soviética y estadounidense; Kim Il-sung proclama la RPD de Corea'},
+ {y:1948,n:['Sri Lanka'],why:'descolonización británica: Ceilán obtiene la independencia pacíficamente'},
+ {y:1956,n:['Túnez'],why:'fin del protectorado francés tras la lucha del Neo-Destur de Habib Burguiba'},
+ {y:1960,n:['Chipre'],why:'acuerdos de Zúrich y Londres tras la lucha de la EOKA contra el dominio británico'},
+ {y:1960,n:['Gabón','República del Congo'],why:'descolonización del África Ecuatorial Francesa (el «año de África»)',each:1},
+ {y:1966,n:['Lesoto'],why:'el protectorado británico de Basutolandia se independiza (nunca fue anexionado por Sudáfrica)'},
+ {y:1968,n:['Suazilandia'],why:'el protectorado británico de Suazilandia se independiza como monarquía'},
+ {y:1974,n:['Guinea-Bisáu'],why:'guerra de independencia del PAIGC de Amílcar Cabral y Revolución de los Claveles en Portugal'},
+ {y:1975,n:['Cabo Verde'],why:'Revolución de los Claveles: Portugal abandona sus colonias'},
+ {y:1976,n:['Sahara Occidental'],why:'retirada de España y proclamación de la República Saharaui por el Frente Polisario'},
+ {y:1991,n:['Estonia','Letonia','Lituania'],why:'independencia báltica: Revolución Cantada, ocupación soviética nunca reconocida y golpe fallido de agosto de 1991',each:1},
+ {y:1991,n:['Bielorrusia','Ucrania','Moldavia','Georgia','Armenia','Azerbaiyán','Kazajistán','Uzbekistán','Turkmenistán','Kirguistán','Tayikistán'],why:'disolución de la URSS: estancamiento económico, guerra de Afganistán, glásnost y perestroika, movimientos nacionalistas y golpe fallido de agosto de 1991',each:1},
+ {y:1991,n:['Somalilandia'],why:'colapso del Estado somalí tras la caída de Siad Barre: el norte proclama su independencia'},
+ {y:1993,n:['República Checa'],why:'«divorcio de terciopelo»: separación pacífica de Checoslovaquia'},
+ {y:1993,n:['Eslovaquia'],why:'«divorcio de terciopelo»: separación pacífica de Checoslovaquia'},
+ {y:1993,n:['Eritrea'],why:'guerra de independencia de 30 años contra Etiopía y referéndum (99,8 % a favor)'},
+ {y:1994,n:['Palestina'],why:'Acuerdos de Oslo: se crea la Autoridad Nacional Palestina'},
+ {y:2002,n:['Timor Oriental'],why:'referéndum de 1999 bajo la ONU tras 24 años de ocupación indonesia'},
+ {y:1768,n:['Nepal'],why:'unificación de Nepal por Prithvi Narayan Shah (conquista del valle de Katmandú)'},
+ {y:1844,n:['República Dominicana'],why:'Guerra de Independencia Dominicana contra la ocupación haitiana (Juan Pablo Duarte, La Trinitaria)'},
+ {y:1907,n:['Bután'],why:'Ugyen Wangchuck es coronado primer rey y se unifica la monarquía butanesa'},
+ {y:1952,n:['Japón'],why:'Tratado de San Francisco: termina la ocupación aliada y Japón recupera la soberanía'},
+ {y:1962,n:['Uganda','Ruanda','Burundi'],why:'descolonización de África Oriental (fin del protectorado británico y de la tutela belga)',each:1},
+ {y:1968,n:['Guinea Ecuatorial'],why:'descolonización española tras el referéndum de 1968'},
+ {y:1971,n:['Bangladés'],why:'Guerra de Liberación de Bangladés contra Pakistán tras el genocidio de 1971 y la intervención india'},
+ {y:1991,n:['Croacia','Eslovenia'],why:'disolución de Yugoslavia: crisis económica, nacionalismos tras la muerte de Tito y fin del comunismo',each:1},
+ {y:2008,n:['Kosovo'],why:'guerra de Kosovo (1998-1999), administración de la ONU y declaración de independencia de 2008'},
+ {y:2011,n:['Sudán del Sur'],why:'segunda guerra civil sudanesa, Acuerdo de Paz de 2005 y referéndum (98,8 % a favor)'}];
+const IDS={'Kazajistán':'kazajistan','Uzbekistán':'uzbekistan','Ucrania':'ucrania','Corea del Norte':'corea_norte','Haití':'haiti','Portugal':'portugal','Costa Rica':'costa_rica'};
+const BY={};PROV.forEach((p,i)=>{(BY[p.country]=BY[p.country]||[]).push(i);});
+function fy(y){return y<0?(-y)+' a.C.':String(y);}
+function R(){return typeof rng==='function'?rng():Math.random();}
+function slug(s){return s.normalize('NFD').replace(/[^\w]/g,'').toLowerCase();}
+function target(nm,id){if(id&&civ(id))return id;if(IDS[nm])return IDS[nm];
+ const a=Object.values(G.nations).find(n=>n.alive&&civ(n.civ)&&civ(n.civ).name===nm);if(a)return a.civ;
+ const x='ind_'+slug(nm);if(!G.extra[x]){const ps=BY[nm];G.extra[x]={id:x,name:nm,era:'C',start:G.year,end:2026,region:'',from:[],to:[],people:[],events:[]};ANCH[x]=PROV[ps[0]].c;}return x;}
+function free(e,nm){const ps=(BY[nm]||[]);const id=target(nm,e.id);const lost={};let k=0,kept=0,un=0;const own={};
+ ps.forEach(p=>{const o=G.owner[p];if(o===id)return;(own[o||'']=own[o||'']||[]).push(p);});
+ const take=[];const info=[];
+ Object.entries(own).forEach(([o,g])=>{const n=o?N(o):null;const st=n?(n.stab||0):0;const pr=n?Math.max(0.5,Math.min(1,0.9+(60-st)/100)):1;
+  if(R()<pr){take.push(...g);if(o)info.push(`${short(o)} pierde ${g.length} (prob. ${Math.round(pr*100)}%, estabilidad ${Math.round(st)})`);else un+=g.length;}
+  else{kept+=g.length;info.push(`${short(o)} conserva ${g.length} (prob. ${Math.round(pr*100)}%, estabilidad ${Math.round(st)})`);}});
+ if(!take.length){if(kept)addLog(`🛡️ ${fy(e.y)} — ${nm} no logra independizarse (${e.why}): ${info.join('; ')}.`);return;}
+ let t=N(id);const army=take.reduce((a,p)=>{const o=G.owner[p];const n=o&&N(o);return a+(n?n.army/Math.max(1,provsOf(o).length):1);},0);
+ if(!t){t=newNation(id,false);G.nations[id]=t;}
+ if(!t.alive||!provsOf(id).length){t.alive=true;t.cap=take[0];t.army=Math.max(3,Math.round(army));const d=take.map(p=>G.owner[p]).find(o=>o&&N(o));if(d)t.techs=N(d).techs.slice();}
+ else t.army+=Math.max(1,Math.round(army));
+ if(!G.spawned.includes(id))G.spawned.push(id);
+ take.forEach(p=>{const o=G.owner[p];if(o&&N(o))N(o).army=Math.max(1,Math.round(N(o).army*(1-1/Math.max(2,provsOf(o).length))));G.owner[p]=id;});
+ addLog(`🗽 ${fy(e.y)} — Independencia de ${nm}: ${e.why}. Se separan ${take.length} provincias${un?` (${un} sin dueño)`:''}${info.length?': '+info.join('; '):''}. Ejército inicial ${t.army}.`);
+ checkDead();}
+const _ay=advanceYear;advanceYear=function(){const y0=G.year;const r=_ay.apply(this,arguments);try{if(!G.ind)G.ind={};const y=G.year;
+ IND.forEach((e,i)=>{if(G.ind[i]||!(e.y>y0&&e.y<=y))return;G.ind[i]=1;e.n.forEach(nm=>free(e,nm));});}catch(x){console.error(x);}return r;};
+})();
+</script><div id=ver>v6.19</div></body></html>
