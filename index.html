@@ -2218,15 +2218,17 @@ const _av=advanceYear;advanceYear=function(){if(G&&G.varStep){const s=stepAt(G.y
 (function(){
 const NSI0=new Set([0, 4, 5, 6, 8, 13, 18, 19, 23, 24, 25, 26, 27, 34, 35, 38, 39, 41, 43, 44, 46, 47, 48, 49, 50, 52, 53, 54, 63, 65, 66, 68, 70, 71, 72, 74, 75, 76, 88, 89, 90, 91, 92, 93, 94, 95, 97, 101, 102, 103, 104, 105, 106, 108, 114, 115, 116, 117, 118, 119, 126, 134, 136, 137, 147, 157, 172, 202, 203, 205, 210, 215, 217, 267, 283, 287, 288, 299, 337, 354, 364, 365, 368, 439, 476, 486, 496, 503, 513, 570]);
 const TK=t=>(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').split(/[^a-z]+/).filter(w=>w.length>3&&!/^(reino|imperio|estado|estados|republica|dinastia|gran|ducado|principado|confederacion|pueblos|ciudades|cultura|sultanato|califato|kanato|kanatos|virreinato)$/.test(w)).map(w=>w.slice(0,5));
-function pickCiv(v,ps,Y){const nm=typeof LBN0!=='undefined'&&LBN0[v];if(!nm)return null;const T=new Set(TK(nm));const S=new Set(ps);let best=null,bs=0;
+const NFIX=[[/^Imperio Sui$/,618,'China Tang']];function fixNm(nm,Y){if(!nm)return nm;for(const [re,y,t] of NFIX)if(re.test(nm)&&Y>=y)return t;return nm;}
+function pickCiv(v,ps,Y){const nm=fixNm(typeof LBN0!=='undefined'&&LBN0[v],Y);if(!nm)return null;const T=new Set(TK(nm));const S=new Set(ps);let best=null,bs=0;
  CIVS.forEach(c=>{if(c.start>Y||c.end<=Y||G.spawned.includes(c.id))return;const a=ANCH[c.id];if(!a)return;const inG=ps.some(p=>dist(PROV[p].c,a)<3);if(!inG)return;const sc=TK(c.name).filter(w=>T.has(w)).length;if(sc>bs){bs=sc;best=c;}});
+ if(best&&best.id==='sui_tang'&&Y>=618){const x='tang_ini';if(!G.extra[x]){G.extra[x]=Object.assign({},best,{id:x,name:'China Tang',start:618,people:['Taizong','Wu Zetian','Xuanzong']});ANCH[x]=ANCH.sui_tang;}return x;}
  if(best)return best.id;return 'pue_'+v;}
 const OVR={1914:1900};function rowNear(y){const Y=__H.Y;if(OVR[y]!==undefined&&Y.includes(OVR[y]))return Y.indexOf(OVR[y]);let b=0;for(let k=0;k<Y.length;k++)if(Math.abs(Y[k]-y)<Math.abs(Y[b]-y))b=k;return b;}
 window.applyStart=function(Y){const H=__H;G.year=Y;G.nations={};G.owner=PROV.map(()=>null);G.spawned=[];G.extra={};G.log=[];
  const r=rowNear(Y);const grp={};for(let p=0;p<PROV.length;p++){const v=H.dec(r,p);if(!H.isSt(v)||NSI0.has(v))continue;(grp[v]=grp[v]||[]).push(p);}
  const L=Object.entries(grp).sort((a,b)=>b[1].length-a[1].length);
  L.forEach(([v,ps])=>{let id=pickCiv(v,ps,Y);try{const sc=id?null:window.__SUCC(ps);if(sc&&!G.spawned.includes(sc.id)){const a=ANCH[sc.id];const inG=a&&ps.some(p=>inProv(a,PROV[p]));const near=a&&ps.some(p=>dist(PROV[p].c,a)<3);if(inG||(near&&ps.length<=30))id=sc.id;}}catch(e){}
-  if(!id)id='pue_'+v;if(id.startsWith('pue_')&&!G.extra[id]){const nm=(typeof LBN0!=='undefined'&&LBN0[v])||('Estado de '+(typeof locName==='function'?locName(ps[0]):PROV[ps[0]].country));G.extra[id]={id,name:nm,era:Y<500?'A':Y<1500?'M':Y<1800?'D':'C',start:Y,end:2026,region:PROV[ps[0]].country,from:[],to:[],people:[],events:[]};ANCH[id]=PROV[ps[0]].c;}
+  if(!id)id='pue_'+v;if(id.startsWith('pue_')&&!G.extra[id]){const nm=fixNm(typeof LBN0!=='undefined'&&LBN0[v],Y)||('Estado de '+(typeof locName==='function'?locName(ps[0]):PROV[ps[0]].country));G.extra[id]={id,name:nm,era:Y<500?'A':Y<1500?'M':Y<1800?'D':'C',start:Y,end:2026,region:PROV[ps[0]].country,from:[],to:[],people:[],events:[]};ANCH[id]=PROV[ps[0]].c;}
   G.spawned.push(id);const n=newNation(id,false);G.nations[id]=n;ps.forEach(p=>G.owner[p]=id);
   const a=ANCH[id];n.cap=a?ps.slice().sort((x,y)=>dist(PROV[x].c,a)-dist(PROV[y].c,a))[0]:ps[0];
   n.army=Math.max(n.army,Math.round(ps.length*1.5));n.est=ps.length;});
@@ -2275,4 +2277,25 @@ const _av=advanceYear;advanceYear=function(){if(!live())return _av.apply(this,ar
 })();
 
 (function(){const _ss=window.startSpectator;if(_ss)window.startSpectator=function(){const r=_ss.apply(this,arguments);try{Object.values(G.nations).forEach(n=>n.human=false);render();}catch(e){}return r;};})();
-</script><div id=ver>v6.25</div></body></html>
+</script><div id=ver>v6.26</div>
+<script>
+// v6.26: en partidas que empiezan en un año histórico, los estados nuevos que se separan de un estado existente
+// no surgen solo por la fecha: necesitan tensión acumulada desde el inicio (mismas reglas para la IA y el jugador).
+(function(){const _sp=spawn;window.spawn=spawn=function(id,announce){try{
+ if(G.startYear!==undefined&&G.startYear>-3000&&!G.spawned.includes(id)&&!G.prevent.includes(id)){const c=civ(id);const a=anchorOf(id);
+  if(c&&a&&c.start>G.startYear){let p0=-1,bd=1e9;for(let p=0;p<PROV.length;p++){const d=dist(PROV[p].c,a);if(d<bd){bd=d;p0=p;}}
+   const o=p0>=0?G.owner[p0]:null;const n=o&&N(o);const pred=(c.from||[]).includes(o)||short(o)===short(id)||(civ(o)&&civ(o).to||[]).includes(id);
+   if(n&&n.alive&&!pred&&o!==id){if(!G.sten)G.sten={};const k=id;const ps=provsOf(o);const capC=n.cap>=0?PROV[n.cap].country:null;
+    const f=[];if(capC!==PROV[p0].country)f.push(['identidad propia',0.35,`${PROV[p0].country} es distinta del núcleo de ${short(o)}`]);
+    const ext=1-ps.filter(p=>PROV[p].country===capC).length/Math.max(1,ps.length);if(ext>0.3)f.push(['sobreextensión',0.3*ext,`${Math.round(ext*100)}% de sus provincias son de otros pueblos`]);
+    if((n.gold||0)<0)f.push(['estancamiento económico',0.3,`tesoro en ${Math.round(n.gold)}`]);
+    const w=Object.keys(n.war||{}).length;if(w)f.push(['guerras costosas',0.15*Math.min(3,w),`${w} guerra(s) abierta(s)`]);
+    const st=n.stab||0;f.push(['gobierno',(55-st)/100,`estabilidad ${Math.round(st)}`]);
+    const sum=f.reduce((x,y)=>x+y[1],0);const d=Math.round(60*sum*(G.step/25));const T=G.sten;const tY=k+'y';
+    if(T[tY]===G.year)return null;T[tY]=G.year;const old=T[k]||0;T[k]=Math.max(0,old+d);
+    const cs=f.filter(x=>x[1]>0).map(x=>`${x[0]} (${x[2]})`).join(', ')||'ninguna';
+    if(T[k]<100){if(old<50&&T[k]>=50)addLog(`📈 ${yr(G.year)} — Crece el movimiento para que surja ${c.name} frente a ${short(o)}: tensión ${Math.round(T[k])}/100 (+${d} este turno). Causas: ${cs}.`);return null;}
+    if(announce)addLog(`🗽 ${yr(G.year)} — La tensión acumulada (${Math.round(T[k])}/100; causas: ${cs}) hace surgir ${c.name} frente a ${short(o)}.`);}}}
+ }catch(e){console.error(e);}return _sp.apply(this,arguments);};})();
+</script>
+</body></html>
