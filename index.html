@@ -2280,7 +2280,7 @@ const _av=advanceYear;advanceYear=function(){if(!live())return _av.apply(this,ar
 })();
 
 (function(){const _ss=window.startSpectator;if(_ss)window.startSpectator=function(){const r=_ss.apply(this,arguments);try{Object.values(G.nations).forEach(n=>n.human=false);render();}catch(e){}return r;};})();
-</script><div id=ver>v6.28</div>
+</script><div id=ver>v6.29</div>
 <script>
 // v6.26: en partidas que empiezan en un año histórico, los estados nuevos que se separan de un estado existente
 // no surgen solo por la fecha: necesitan tensión acumulada desde el inicio (mismas reglas para la IA y el jugador).
@@ -2331,6 +2331,57 @@ window.seedPressures=seedPressures;
 const _as=window.applyStart;window.applyStart=function(Y){const r=_as.apply(this,arguments);try{if(Y>-3000)seedPressures(Y);}catch(e){console.error(e);}return r;};
 // aviso al jugador de las presiones que le afectan
 const _ng=newGame;newGame=function(){const r=_ng.apply(this,arguments);try{if(G.seedP&&G.startYear>-3000){const hs=Object.values(G.nations).filter(n=>n.human).map(n=>n.civ);G.seedP.filter(x=>hs.includes(x.o)&&x.v>=40).slice(0,4).forEach(x=>addLog(`⚠️ Tu estado arrastra presión: ${x.t} ${x.v}/100. Causas: ${x.c}${x.why?'. Trasfondo: '+x.why:''}. Buen gobierno (estabilidad alta, tesoro positivo, paz) puede frenarla.`));}}catch(e){}return r;};
+})();
+</script>
+<script>
+// v6.29: agendas históricas de la IA (Antigüedad). Cada civilización persigue los objetivos que tuvo en la historia
+// (territorio de su estado en el siguiente mapa histórico, o el de la entrada de su agenda). Las guerras, la expansión y los
+// objetivos de batalla se eligen para cumplirla; los colapsos siguen saliendo solo de causas del juego. Si el jugador
+// bloquea una agenda (gana la guerra o retiene el objetivo con más poder), esa civilización la adapta. Mismas reglas para todos.
+(function(){
+const AG={
+ egipto_ant:[[-3100,-1550,-2000,'unificar y dominar el valle del Nilo']],
+ sumer:[[-3000,-2334,-2000,'dominar Mesopotamia']],akkad:[[-2334,-2154,-2000,'imperio acadio en Mesopotamia']],ur3:[[-2112,-2004,-2000,'restaurar el reino de Sumer y Acad']],
+ indo:[[-3300,-1300,-2000,'ciudades del Indo']],elam:[[-3200,-539,-1000,'meseta de Elam y Susiana']],
+ asiria:[[-2025,-1000,-1000,'Alta Mesopotamia'],[-1000,-609,-700,'Imperio neoasirio: Babilonia, Levante y Egipto']],
+ babilonia:[[-1894,-626,-1000,'Babilonia'],[-626,-539,-500,'Imperio neobabilónico']],
+ hititas:[[-1650,-1180,-1500,'Anatolia hitita y Siria']],egipto_nuevo:[[-1550,-1070,-1500,'Imperio Nuevo: Nubia y Levante'],[-1070,-332,-700,'Egipto']],
+ fenicia:[[-1500,-332,-1000,'ciudades fenicias y colonias']],cartago:[[-814,-264,-323,'Imperio cartaginés: Sicilia, Cerdeña, Hispania'],[-264,-146,-200,'resistir a Roma']],
+ media:[[-678,-550,-500,'Imperio medo']],persia_aq:[[-550,-330,-500,'conquistar Lidia, Babilonia y Egipto']],
+ micenas:[[-1600,-1100,-1500,'Grecia micénica']],grecia:[[-800,-338,-500,'colonias y polis griegas']],
+ macedonia:[[-808,-336,-323,'hegemonía sobre Grecia'],[-336,-168,-323,'imperio de Alejandro: Persia y Egipto']],
+ seleucidas:[[-312,-63,-200,'reino seléucida']],ptolemaico:[[-305,-30,-200,'Egipto ptolemaico']],partos:[[-247,224,0,'Imperio parto: Mesopotamia e Irán']],
+ etruscos:[[-900,-264,-500,'Etruria']],roma_rep:[[-509,-264,-200,'unificar Italia'],[-264,-27,0,'Cartago (146 a.C.), Hispania, Grecia, Galia']],
+ roma_imp:[[-27,476,0,'Imperio romano: el Mediterráneo']],galos:[[-450,-50,-200,'Galia']],
+ vedica:[[-1500,-322,-500,'Mahajanapadas del Ganges']],maurya:[[-322,-185,-200,'Imperio maurya: unificar la India']],
+ shang:[[-1600,-1046,-1500,'China Shang']],zhou:[[-1046,-256,-1000,'China Zhou']],qin:[[-260,-206,-200,'unificación de China (221 a.C.)']],
+ han:[[-206,220,0,'China Han y el corredor de Gansu']],xiongnu:[[-209,93,-200,'confederación de la estepa']],
+ kush:[[-1070,350,-500,'Nubia y Meroe']],jazaros:[[650,969,900,'Kanato jázaro: estepa del Volga y el Caspio',[47,46.5]]],pechenegos:[[860,1091,1000,'estepa póntica entre el Dniéper y el Don',[35,47]]],olmecas:[[-1200,-400,-1000,'Golfo de México']],mayas_cl:[[-1000,900,0,'tierras mayas']],chavin:[[-1200,-200,-500,'Andes centrales']]};
+window.AGENDA=AG;const C={};
+function agOf(n){if(!n||n.human||!n.alive||n.cap<0||G.year>=1100)return null;const h=__H,y=G.year;let e=(AG[n.civ]||[]).find(a=>y>=a[0]&&y<a[1]&&(y<0||a[0]>=500)),r;
+ if(e)r=h.Y.indexOf(e[2]);if(!e||r<0||h.Y[r]<y-100){if(!window.AGGEN)return null;e=null;const r0=h.rowAt(y);if(r0+1>=h.Y.length||h.Y[r0+1]-y>150)return null;r=r0+1;}
+ let c0=n.cap;if(e&&e[4]){const k='a'+n.civ;if(!(k in C)){let b=0,bd=1e9;for(let p=0;p<PROV.length;p++){const d=dist(PROV[p].c,e[4]);if(d<bd){bd=d;b=p;}}C[k]=b;}c0=C[k];}const v=h.dec(r,c0);if(!h.isSt(v))return null;const k=r+':'+v;let T=C[k];if(!T){T=[];for(let p=0;p<PROV.length;p++)if(h.dec(r,p)===v)T.push(p);C[k]=T;}
+ return{T,e,label:e?e[3]:'territorio de su estado histórico',y:h.Y[r]};}
+window.agendaOf=agOf;
+function step(n){if(window.AGNOSTEP)return;const A=agOf(n);if(!A)return;const S=new Set(A.T);const rem=A.T.filter(p=>G.owner[p]!==n.civ);if(!rem.length)return;const mine=provsOf(n.civ);
+ if(n.prod>=8&&mine.length<expCap(n)){const c=[];mine.forEach(p=>PROV[p].nb.forEach(q=>{if(!G.owner[q]&&S.has(q)&&!(G.settle||[]).some(s=>s.p===q))c.push(q);}));for(let k=0;k<2&&c.length&&n.prod>=8;k++){if(rng()>=PP(0.5))break;const q=c.splice(Math.floor(rng()*c.length),1)[0];if(startSettle(q,false,n.civ))n.prod-=8;else break;}}
+ if(Object.keys(n.war).length)return;const hold={};rem.forEach(p=>{const o=G.owner[p];if(o&&o!==n.civ)hold[o]=(hold[o]||0)+1;});
+ if(!A.e)return;const my=power(n);let best=null,bs=0;for(const o in hold){const e=N(o);if(!e||!e.alive||n.allies.includes(o))continue;if(e.human&&(G.agBlk||{})[n.civ+'|'+o]>G.year)continue;
+  const pe=power(e);if(pe>my)continue;if(!borderTargets(n,e).some(p=>S.has(p)))continue;const sc=hold[o]*my/(pe+1);if(sc>bs){bs=sc;best=e;}}
+ if(best&&rng()<PP(0.3)){declareWar(n,best,true);if(n.war[best.civ])addLog(`🎯 ${short(n.civ)} declara la guerra a ${short(best.civ)} siguiendo su agenda histórica: ${A.label} (${hold[best.civ]} provincias objetivo en manos de ${short(best.civ)}; poder ${my} contra ${power(best)}).`);}}
+const _ai=aiTurn;aiTurn=function(n){const r=_ai.apply(this,arguments);try{step(n);}catch(x){console.error(x);}return r;};
+const _bt=battle;battle=function(att,def,target){let A=null,D=null;try{if(target===undefined&&att&&!att.human){A=agOf(att);if(def&&!def.human)D=agOf(def);}}catch(x){}
+ if(!A&&!D)return _bt.apply(this,arguments);const bT=borderTargets;const all=bT(att,def);let ts=A?all.filter(p=>A.T.includes(p)):[];
+ if(!ts.length&&D){const DS=new Set(D.T);ts=all.filter(p=>!DS.has(p));}if(!ts.length||ts.length===all.length)return _bt.apply(this,arguments);
+ borderTargets=(a,d)=>a===att&&d===def?ts.slice():bT(a,d);try{return _bt.apply(this,arguments);}finally{borderTargets=bT;}};
+const _mp=makePeace;makePeace=function(a,b){try{[[a,b],[b,a]].forEach(([x,y])=>{if(y&&y.human&&x&&!x.human&&agOf(x)&&power(x)<power(y)){G.agBlk=G.agBlk||{};G.agBlk[x.civ+'|'+y.civ]=G.year+100;addLog(`🧭 ${short(x.civ)} renuncia por ahora a su agenda frente a ${short(y.civ)} (poder ${power(x)} contra ${power(y)}): la historia cambia de rumbo.`);}});}catch(x){}return _mp.apply(this,arguments);};
+// pueblos que el mapa histórico muestra organizándose pronto: su presión de formación (mismas causas) empieza a acumularse
+// antes de la fecha del mapa; el estado nace por la regla general de formación cuando llega esa fecha.
+const _ay=advanceYear;advanceYear=function(){try{const F=G.fpN;if(F&&G.year<0&&G.fp){const h=__H,r=h.rowAt(G.year);if(r+1<h.Y.length&&G.year+G.step>=h.Y[r+1])for(const v in F){G.fp[v]=Math.max(G.fp[v]||0,F[v]);delete F[v];}}}catch(x){}
+ const r0=_ay.apply(this,arguments);try{if(G.year>=0||!G.fp||window.AGNOLOOK)return r0;const h=__H,r=h.rowAt(G.year);if(r+1>=h.Y.length||h.Y[r+1]-h.Y[r]<1000||h.Y[r+1]-G.year>150)return r0;
+ const NSI=window.__NSI||new Set();const grp={};for(let p=0;p<PROV.length;p++){if(G.owner[p])continue;const v=h.dec(r+1,p);if(!h.isSt(v)||NSI.has(v)||h.dec(r,p)===v)continue;(grp[v]=grp[v]||[]).push(p);}
+ const F=G.fpN||(G.fpN={});Object.entries(grp).forEach(([v,ps])=>{if(ps.length<2)return;let nb=new Set();ps.forEach(p=>PROV[p].nb.forEach(q=>{const o=G.owner[q];if(o)nb.add(o);}));let tk=0;nb.forEach(o=>{const n=N(o);if(n&&n.alive)tk=Math.max(tk,(n.techs||[]).length);});
+  const sum=0.25+(nb.size?0.3:0)+Math.min(0.4,tk/25)+(ps.some(p=>PROV[p].co)?0.1:0);F[v]=Math.min(100,(F[v]||0)+Math.round(60*sum*G.step/25));});}catch(x){console.error(x);}return r0;};
 })();
 </script>
 </body></html>
