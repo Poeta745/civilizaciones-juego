@@ -2280,7 +2280,7 @@ const _av=advanceYear;advanceYear=function(){if(!live())return _av.apply(this,ar
 })();
 
 (function(){const _ss=window.startSpectator;if(_ss)window.startSpectator=function(){const r=_ss.apply(this,arguments);try{Object.values(G.nations).forEach(n=>n.human=false);render();}catch(e){}return r;};})();
-</script><div id=ver>v6.35</div>
+</script><div id=ver>v6.36</div>
 <script>
 // v6.26: en partidas que empiezan en un año histórico, los estados nuevos que se separan de un estado existente
 // no surgen solo por la fecha: necesitan tensión acumulada desde el inicio (mismas reglas para la IA y el jugador).
@@ -2334,7 +2334,7 @@ const _ng=newGame;newGame=function(){const r=_ng.apply(this,arguments);try{if(G.
 })();
 </script>
 <script>
-// v6.35: pueblos y estados que faltaban en el mapa (sami, Madagascar, atabascanos, cheroquis, apaches, natchez, Nueva Guinea, Darfur, Segú, Vakataka, Diriyah) con agenda hacia su tierra histórica. v6.34: la expansión de agenda también cruza el mar desde puertos y factorías propios (los estados oceánicos a cualquier distancia, los demás en saltos cortos), con el coste normal de colonos, comida y oro. v6.33: compañías y colonias (Bahía de Hudson, VOC, Luisiana) nacen solo si vive su metrópoli y, junto con España, Rusia y EE. UU., persiguen su territorio de 1800; la Escandinavia vikinga se disuelve en sus reinos cuando Dinamarca, Noruega y Suecia ya existen (consolidación cristiana). v6.32: gaznávidas, Brunéi, agendas de Srivijaya y Majapahit; la expansión de agenda puebla su tierra histórica vacía sin el tope de alcance. v6.31: agendas medievales (sasánidas, Roma de Oriente, rouran, fatimíes, rajputs, Dinamarca-Noruega y Kalmar, Chagatai, Malaca) y China entre los Han y los Sui. v6.30: sucesores de la estepa con agenda propia; Funan, Lavo, Siberia oriental y Arabia central como civilizaciones. v6.29: agendas históricas de la IA (Antigüedad). Cada civilización persigue los objetivos que tuvo en la historia
+// v6.36: subsidio colonial de la metrópoli (8% de comida y oro, máx. 60) para Luisiana, la Bahía de Hudson y la VOC. // v6.35: pueblos y estados que faltaban en el mapa (sami, Madagascar, atabascanos, cheroquis, apaches, natchez, Nueva Guinea, Darfur, Segú, Vakataka, Diriyah) con agenda hacia su tierra histórica. v6.34: la expansión de agenda también cruza el mar desde puertos y factorías propios (los estados oceánicos a cualquier distancia, los demás en saltos cortos), con el coste normal de colonos, comida y oro. v6.33: compañías y colonias (Bahía de Hudson, VOC, Luisiana) nacen solo si vive su metrópoli y, junto con España, Rusia y EE. UU., persiguen su territorio de 1800; la Escandinavia vikinga se disuelve en sus reinos cuando Dinamarca, Noruega y Suecia ya existen (consolidación cristiana). v6.32: gaznávidas, Brunéi, agendas de Srivijaya y Majapahit; la expansión de agenda puebla su tierra histórica vacía sin el tope de alcance. v6.31: agendas medievales (sasánidas, Roma de Oriente, rouran, fatimíes, rajputs, Dinamarca-Noruega y Kalmar, Chagatai, Malaca) y China entre los Han y los Sui. v6.30: sucesores de la estepa con agenda propia; Funan, Lavo, Siberia oriental y Arabia central como civilizaciones. v6.29: agendas históricas de la IA (Antigüedad). Cada civilización persigue los objetivos que tuvo en la historia
 // (territorio de su estado en el siguiente mapa histórico, o el de la entrada de su agenda). Las guerras, la expansión y los
 // objetivos de batalla se eligen para cumplirla; los colapsos siguen saliendo solo de causas del juego. Si el jugador
 // bloquea una agenda (gana la guerra o retiene el objetivo con más poder), esa civilización la adapta. Mismas reglas para todos.
@@ -2390,5 +2390,11 @@ const _ay=advanceYear;advanceYear=function(){try{const v=N('vikingos');if(v&&v.a
  const F=G.fpN||(G.fpN={});Object.entries(grp).forEach(([v,ps])=>{if(ps.length<2)return;let nb=new Set();ps.forEach(p=>PROV[p].nb.forEach(q=>{const o=G.owner[q];if(o)nb.add(o);}));let tk=0;nb.forEach(o=>{const n=N(o);if(n&&n.alive)tk=Math.max(tk,(n.techs||[]).length);});
   const sum=0.25+(nb.size?0.3:0)+Math.min(0.4,tk/25)+(ps.some(p=>PROV[p].co)?0.1:0);F[v]=Math.min(100,(F[v]||0)+Math.round(60*sum*G.step/25));});}catch(x){console.error(x);}return r0;};
 })();
+
+// v6.36: las colonias de compañía y de la corona reciben cada turno un subsidio de su metrópoli (8% de su comida y oro, máx. 60 de cada), que la metrópoli paga: así se financiaron la Luisiana, la Bahía de Hudson y la VOC (mismas reglas para IA y jugador; se anota en el registro si juegas una de las dos)
+(function(){try{
+const MET={luisiana:['francia_med','nueva_francia','francia_rev','espana_imp'],hbc:['gran_bretana','inglaterra','reino_unido'],voc:['paises_bajos']};
+const _st=settleTurn;settleTurn=function(){try{Object.keys(MET).forEach(c=>{const n=N(c);if(!n||!n.alive)return;const m=MET[c].map(N).find(x=>x&&x.alive&&provsOf(x.civ).length);if(!m)return;const f=Math.min(60,Math.floor((m.food||0)*0.08)),g=Math.min(60,Math.floor((m.gold||0)*0.08));if(f<=0&&g<=0)return;m.food-=f;m.gold-=g;n.food=(n.food||0)+f;n.gold=(n.gold||0)+g;n.subsidio={de:m.civ,food:f,gold:g};if(n.human||m.human)addLog(`🚢 Subsidio colonial: ${short(m.civ)} envía a ${short(c)} ${f} de comida y ${g} de oro (8%, máx. 60).`);});}catch(e){}return _st.apply(this,arguments);};
+}catch(x){console.error(x);}})();
 </script>
 </body></html>
